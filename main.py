@@ -35,8 +35,8 @@ def update_frame(frame):
 # Initialise the particles
 
 radius = np.random.rand(N)
-particles = [Particle(np.random.rand() * 0.8 * paredx + 1, np.random.rand() * 0.7 * paredy + 1,
-                      np.random.randn() * 0.5, np.random.randn() * 0.5, (radius[i] + 0.5) * 0.5, radius[i] * 3) for i in range(N)]
+particles = [Particle(np.random.rand() * (paredx - 1 - 2) + 2, np.random.rand() * (paredy - 1 - 2) + 2,
+                      np.random.randn() * 0.5, np.random.randn() * 0.5, (radius[i] + 0.5) * 1.5, radius[i] * 3) for i in range(N)]
 
 # Plotting configuration
 
@@ -55,7 +55,7 @@ for circle in circles:
     ax.add_patch(circle)
 
 ani = animation.FuncAnimation(fig, update_frame, frames=nframes, interval=30, blit=False)
-
+print('Animation calculated. Saving...')
 save_directory = os.path.join(plot_dir)
 
 if not os.path.exists(save_directory):
