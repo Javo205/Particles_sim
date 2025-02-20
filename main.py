@@ -6,13 +6,16 @@ import matplotlib.animation as animation
 from objects import Particle, SpatialGrid
 from simulation import update, check_collision, check_walls
 from config import paredx, paredy, dt, N, nframes
+from tqdm import tqdm
 plot_dir = 'Visuals'
-grid = SpatialGrid(cell_size=5)
+grid = SpatialGrid(cell_size=2)
+pbar_sim = tqdm(total=nframes, desc="Simulating Physics")
 
 
 def update_frame(frame):
     """Update function for animation"""
 
+    pbar_sim.update(1)
     grid.update(particles)
     for p in particles:
         update(p, dt)  # Move particles
@@ -36,7 +39,7 @@ def update_frame(frame):
 
 radius = np.random.rand(N)
 particles = [Particle(np.random.rand() * (paredx - 1 - 2) + 2, np.random.rand() * (paredy - 1 - 2) + 2,
-                      np.random.randn() * 0.5, np.random.randn() * 0.5, (radius[i] + 0.5) * 1.5, radius[i] * 3) for i in range(N)]
+                      np.random.randn() * 3, np.random.randn() * 3, (radius[i] + 0.5) * 1.5, radius[i] * 3) for i in range(N)]
 
 # Plotting configuration
 
@@ -55,10 +58,11 @@ for circle in circles:
     ax.add_patch(circle)
 
 ani = animation.FuncAnimation(fig, update_frame, frames=nframes, interval=30, blit=False)
-print('Animation calculated. Saving...')
+# print('Animation calculated. Saving...')
 save_directory = os.path.join(plot_dir)
 
 if not os.path.exists(save_directory):
     os.makedirs(save_directory)
 
 ani.save(os.path.join(plot_dir, 'particles.gif'), writer="pillow", fps=30)
+pbar_sim.close()
