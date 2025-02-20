@@ -7,6 +7,8 @@ from objects import Particle, SpatialGrid
 from simulation import update, check_collision, check_walls, vel_viscossity
 from config import viscossity, paredx, paredy, dt, N, nframes
 from tqdm import tqdm
+
+os.environ["FFMPEG_BINARY"] = "/usr/bin/ffmpeg"
 plot_dir = 'Visuals'
 grid = SpatialGrid(cell_size=paredx / np.sqrt(N))
 pbar_sim = tqdm(total=nframes, desc="Simulating Physics")
@@ -65,5 +67,6 @@ save_directory = os.path.join(plot_dir)
 if not os.path.exists(save_directory):
     os.makedirs(save_directory)
 
-ani.save(os.path.join(plot_dir, 'particles.gif'), writer="pillow", fps=30)
+writer = animation.FFMpegWriter(fps=30, bitrate=1800)
+ani.save(os.path.join(plot_dir, 'particles.mp4'), writer=writer)
 pbar_sim.close()
