@@ -1,9 +1,11 @@
 import numpy as np
-from config import viscossity
 
 
 def update(particle, dt):
     particle.position += particle.velocity * dt
+
+
+def vel_viscossity(particle, viscossity, dt):
     particle.velocity += -viscossity * particle.velocity * dt
 
 

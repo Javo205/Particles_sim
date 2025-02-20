@@ -4,11 +4,11 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from objects import Particle, SpatialGrid
-from simulation import update, check_collision, check_walls
-from config import paredx, paredy, dt, N, nframes
+from simulation import update, check_collision, check_walls, vel_viscossity
+from config import viscossity, paredx, paredy, dt, N, nframes
 from tqdm import tqdm
 plot_dir = 'Visuals'
-grid = SpatialGrid(cell_size=2)
+grid = SpatialGrid(cell_size=paredx / np.sqrt(N))
 pbar_sim = tqdm(total=nframes, desc="Simulating Physics")
 
 
@@ -18,6 +18,7 @@ def update_frame(frame):
     pbar_sim.update(1)
     grid.update(particles)
     for p in particles:
+        vel_viscossity(p, viscossity, dt)
         update(p, dt)  # Move particles
         check_walls(p, 0, paredx, 0, paredy)
 
