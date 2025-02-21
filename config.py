@@ -1,6 +1,7 @@
-viscossity = 0.02
-paredx = 150
-paredy = 150
+viscossity = 0
+paredx = 300
+paredy = 300
 dt = 0.1
-N = 400  # Number of particles
-nframes = 4000
+N = 3  # Number of particles
+nframes = 1000
+G = 20

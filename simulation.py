@@ -9,10 +9,8 @@ def vel_viscossity(particle, viscossity, dt):
     particle.velocity += -viscossity * particle.velocity * dt
 
 
-def check_collision(particle1, particle2):
+def check_collision(particle1, particle2, delta_pos, distance):
     ''' Ellastic collisions '''
-    delta_pos = particle2.position - particle1.position
-    distance = np.linalg.norm(delta_pos)
 
     if distance < particle1.radius + particle2.radius:
         normal = delta_pos / distance
@@ -42,3 +40,15 @@ def check_walls(particle, x_min, x_max, y_min, y_max):
 
     if particle.position[1] - particle.radius <= y_min and particle.velocity[1] < 0 or particle.position[1] + particle.radius >= y_max and particle.velocity[1] > 0:
         particle.velocity[1] *= -1
+
+
+def Gravitational_forces(p1, p2, G, delta, distance, dt):
+
+    if distance > 0.1:  # Avoid singularity at zero distance
+        force_magnitude = G * (p1.mass * p2.mass) / (distance**2)
+        force_direction = delta / distance  # Normalize vector
+        force = force_magnitude * force_direction
+
+        # Apply Newton's Third Law (equal & opposite forces)
+        p1.velocity += (force / p1.mass) * dt
+        p2.velocity -= (force / p2.mass) * dt  # Opposite direction
