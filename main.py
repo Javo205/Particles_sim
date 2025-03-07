@@ -26,7 +26,7 @@ def update_frame(frame):
     grid.update(particles)
     for p in particles:
         vel_viscossity(p, viscossity, dt)
-        p.update_newton_scheme(dt)  # Move particles
+        p.update_verlet_scheme(dt)  # Move particles
         # check_walls(p, 0, paredx, 0, paredy)
 
     # Check all pairwise collisions
