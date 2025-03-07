@@ -1,6 +1,7 @@
 import numpy as np
 
 
+# TODO: change particle color based on speed
 class Particle:
     def __init__(self, pos, vel, radius, mass, dt):
         self.position = pos
@@ -24,9 +25,15 @@ class Particle:
         self.prev_position = np.copy(self.position)
         self.position = new_position
 
+    def vel_viscossity(self, viscossity, dt):
+        velocity = (self.position - self.prev_position) / self.dt
+        velocity = -viscossity * velocity
+        self.prev_position = self.prev_position - velocity * self.dt
+
     def check_walls(self, x_min, x_max, y_min, y_max):
         """Handle wall collisions with Verlet integration"""
         # Calculate current velocity from positions
+        damping = 1.0
         velocity = (self.position - self.prev_position) / self.dt
 
         # Left wall collision
@@ -36,7 +43,7 @@ class Particle:
                 # Place exactly at boundary
                 self.position[0] = x_min + self.radius
                 # Reverse x component of velocity
-                velocity[0] = -velocity[0] * 0.9  # Adding a damping factor of 0.9
+                velocity[0] = -velocity[0] * damping  # Adding a damping factor of damping
                 # Recalculate previous position based on new velocity
                 self.prev_position[0] = self.position[0] - velocity[0] * self.dt
 
@@ -44,21 +51,21 @@ class Particle:
         if self.position[0] + self.radius >= x_max:
             if self.prev_position[0] + self.radius < x_max:
                 self.position[0] = x_max - self.radius
-                velocity[0] = -velocity[0] * 0.9
+                velocity[0] = -velocity[0] * damping
                 self.prev_position[0] = self.position[0] - velocity[0] * self.dt
 
         # Bottom wall collision
         if self.position[1] - self.radius <= y_min:
             if self.prev_position[1] - self.radius > y_min:
                 self.position[1] = y_min + self.radius
-                velocity[1] = -velocity[1] * 0.9
+                velocity[1] = -velocity[1] * damping
                 self.prev_position[1] = self.position[1] - velocity[1] * self.dt
 
         # Top wall collision
         if self.position[1] + self.radius >= y_max:
             if self.prev_position[1] + self.radius < y_max:
                 self.position[1] = y_max - self.radius
-                velocity[1] = -velocity[1] * 0.9
+                velocity[1] = -velocity[1] * damping
                 self.prev_position[1] = self.position[1] - velocity[1] * self.dt
 
 

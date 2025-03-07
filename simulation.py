@@ -4,10 +4,7 @@ from utils import load_config
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import os
-
-
-def vel_viscossity(particle, viscossity, dt):
-    particle.velocity += -viscossity * particle.velocity * dt
+from tqdm import tqdm
 
 
 def check_collision_verlet(particle1, particle2, delta_pos, distance):
@@ -79,9 +76,10 @@ def check_collision(particle1, particle2, delta_pos, distance):
             particle2.velocity = u2 * normal + v2_perp * perp
 
 
+# TODO: Add LJ potential and see what happens
 def Gravitational_forces(p1, p2, G, delta, distance):
 
-    softening = 1e-2
+    softening = max(p1.radius + p2.radius, 0.1)
     if distance > softening:  # Avoid singularity at zero distance
         force_magnitude = G * (p1.mass * p2.mass) / (distance**2 + softening**2)
         force_direction = delta / distance  # Normalize vector
@@ -114,21 +112,29 @@ class Simulation:
         self.grid = SpatialGrid(cell_size=80)
 
         # 🔹 Setup Matplotlib figure for animation
+        self.pbar_sim = tqdm(total=self.nframes, desc="Simulating Physics")
+        box = np.array([[0, 0], [self.paredx, 0], [self.paredx, self.paredy], [0, self.paredy], [0, 0]])
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, self.paredx)
         self.ax.set_ylim(0, self.paredy)
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+        self.ax.axis('off')
+        self.ax.axis('equal')
+        self.ax.plot(box[:, 0], box[:, 1], 'k', alpha=.6)
         self.circles = [plt.Circle(p.position, p.radius, color='b') for p in self.particles]
         for circle in self.circles:
             self.ax.add_patch(circle)
 
+    # TODO: Particle initialization function creating different scenarios, not just random
     def initialize_particles(self):
         """Creates a list of Particle objects with initial conditions."""
         particles = []
-        for _ in range(self.N):
-            radius = np.random.uniform(0.5, 5.5)
-            mass = radius * 4
-            pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
-            vel = np.random.uniform([-1, -1], [1, 1])  # Random initial velocity
+        for i in range(self.N):
+            radius = i + 4
+            mass = radius * i + 4
+            pos = np.array([self.paredx / 2 + 10 * i, self.paredx / 2 + 10 * i])
+            vel = np.random.uniform([-1, -1], [1, 1]) * 30  # Random initial velocity
             particles.append(Particle(pos, vel, radius, mass, self.dt))
         return particles
 
@@ -149,7 +155,7 @@ class Simulation:
     def update_positions(self):
         """Updates particle positions using Verlet integration."""
         for p in self.particles:
-            vel_viscossity(p, self.viscosity, self.dt)  # Apply viscosity
+            p.vel_viscossity(self.viscosity, self.dt)  # Apply viscosity
             p.update_verlet_scheme(self.dt)  # Move particle
             p.check_walls(0, self.paredx, 0, self.paredy)
 
@@ -162,6 +168,8 @@ class Simulation:
         # Update circle positions
         for i, p in enumerate(self.particles):
             self.circles[i].center = p.position
+
+        self.pbar_sim.update(1)
 
         return self.circles  # Return updated circles
 
@@ -178,5 +186,5 @@ class Simulation:
 
         # Save as a video file
         anim.save(os.path.join(self.plot_dir, filename), writer=writer)
-
+        self.pbar_sim.close()
         print(f"Animation saved successfully as {filename}!")
