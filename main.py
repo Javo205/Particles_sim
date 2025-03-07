@@ -49,8 +49,8 @@ radius = np.ones(N) + np.array([30, 0, 0])
 mass = np.array([80, 1, 1])
 posx = np.array([center[0], center[0] - 50, center[0] - 70])
 posy = np.array([center[1], center[0] - 50, center[0] - 70])
-velx = np.array([0, -5, -5])
-vely = np.array([0, 5, 5])
+velx = np.array([0, -5, -3])
+vely = np.array([0, 5, 3])
 
 particles = [Particle(posx[i], posy[i],
                       velx[i], vely[i], radius[i], mass[i]) for i in range(N)]
