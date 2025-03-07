@@ -4,6 +4,7 @@ from utils import load_config
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import os
+from tqdm import tqdm
 
 
 def vel_viscossity(particle, viscossity, dt):
@@ -79,6 +80,7 @@ def check_collision(particle1, particle2, delta_pos, distance):
             particle2.velocity = u2 * normal + v2_perp * perp
 
 
+# TODO: Add LJ potential and see what happens
 def Gravitational_forces(p1, p2, G, delta, distance):
 
     softening = 1e-2
@@ -114,6 +116,7 @@ class Simulation:
         self.grid = SpatialGrid(cell_size=80)
 
         # 🔹 Setup Matplotlib figure for animation
+        self.pbar_sim = tqdm(total=self.nframes, desc="Simulating Physics")
         box = np.array([[0, 0], [self.paredx, 0], [self.paredx, self.paredy], [0, self.paredy], [0, 0]])
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, self.paredx)
@@ -127,6 +130,7 @@ class Simulation:
         for circle in self.circles:
             self.ax.add_patch(circle)
 
+    # TODO: Particle initialization function creating different scenarios, not just random
     def initialize_particles(self):
         """Creates a list of Particle objects with initial conditions."""
         particles = []
@@ -149,7 +153,7 @@ class Simulation:
                 if p is not other:
                     delta = other.position - p.position
                     distance = np.linalg.norm(delta)
-                    # Gravitational_forces(p, other, self.G, delta, distance)
+                    Gravitational_forces(p, other, self.G, delta, distance)
                     check_collision_verlet(p, other, delta, distance)
 
     def update_positions(self):
@@ -169,6 +173,8 @@ class Simulation:
         for i, p in enumerate(self.particles):
             self.circles[i].center = p.position
 
+        self.pbar_sim.update(1)
+
         return self.circles  # Return updated circles
 
     def save_animation(self, filename="simulation.mp4", fps=30):
@@ -184,5 +190,5 @@ class Simulation:
 
         # Save as a video file
         anim.save(os.path.join(self.plot_dir, filename), writer=writer)
-
+        self.pbar_sim.close()
         print(f"Animation saved successfully as {filename}!")

@@ -1,6 +1,7 @@
 import numpy as np
 
 
+# TODO: change particle color based on speed
 class Particle:
     def __init__(self, pos, vel, radius, mass, dt):
         self.position = pos
