@@ -7,10 +7,6 @@ import os
 from tqdm import tqdm
 
 
-def vel_viscossity(particle, viscossity, dt):
-    particle.velocity += -viscossity * particle.velocity * dt
-
-
 def check_collision_verlet(particle1, particle2, delta_pos, distance):
     """Elastic collisions for Verlet integration"""
     # Check if particles are overlapping
@@ -83,7 +79,7 @@ def check_collision(particle1, particle2, delta_pos, distance):
 # TODO: Add LJ potential and see what happens
 def Gravitational_forces(p1, p2, G, delta, distance):
 
-    softening = 1e-2
+    softening = max(p1.radius + p2.radius, 0.1)
     if distance > softening:  # Avoid singularity at zero distance
         force_magnitude = G * (p1.mass * p2.mass) / (distance**2 + softening**2)
         force_direction = delta / distance  # Normalize vector
@@ -134,11 +130,11 @@ class Simulation:
     def initialize_particles(self):
         """Creates a list of Particle objects with initial conditions."""
         particles = []
-        for _ in range(self.N):
-            radius = np.random.uniform(0.5, 2.5)
-            mass = radius * 4
-            pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
-            vel = np.random.uniform([-1, -1], [1, 1])  # Random initial velocity
+        for i in range(self.N):
+            radius = i + 4
+            mass = radius * i + 4
+            pos = np.array([self.paredx / 2 + 10 * i, self.paredx / 2 + 10 * i])
+            vel = np.random.uniform([-1, -1], [1, 1]) * 30  # Random initial velocity
             particles.append(Particle(pos, vel, radius, mass, self.dt))
         return particles
 
@@ -153,13 +149,13 @@ class Simulation:
                 if p is not other:
                     delta = other.position - p.position
                     distance = np.linalg.norm(delta)
-                    Gravitational_forces(p, other, self.G, delta, distance)
+                    # Gravitational_forces(p, other, self.G, delta, distance)
                     check_collision_verlet(p, other, delta, distance)
 
     def update_positions(self):
         """Updates particle positions using Verlet integration."""
         for p in self.particles:
-            vel_viscossity(p, self.viscosity, self.dt)  # Apply viscosity
+            p.vel_viscossity(self.viscosity, self.dt)  # Apply viscosity
             p.update_verlet_scheme(self.dt)  # Move particle
             p.check_walls(0, self.paredx, 0, self.paredy)
 
