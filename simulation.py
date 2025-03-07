@@ -1,10 +1,6 @@
 import numpy as np
 
 
-def update(particle, dt):
-    particle.position += particle.velocity * dt
-
-
 def vel_viscossity(particle, viscossity, dt):
     particle.velocity += -viscossity * particle.velocity * dt
 
@@ -50,5 +46,5 @@ def Gravitational_forces(p1, p2, G, delta, distance, dt):
         force = force_magnitude * force_direction
 
         # Apply Newton's Third Law (equal & opposite forces)
-        p1.velocity += (force / p1.mass) * dt
-        p2.velocity -= (force / p2.mass) * dt  # Opposite direction
+        p1.acceleratiom = (force / p1.mass) * dt
+        p2.acceleration = -(force / p2.mass) * dt  # Opposite direction
