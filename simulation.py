@@ -10,6 +10,50 @@ def vel_viscossity(particle, viscossity, dt):
     particle.velocity += -viscossity * particle.velocity * dt
 
 
+def check_collision_verlet(particle1, particle2, delta_pos, distance):
+    """Elastic collisions for Verlet integration"""
+    # Check if particles are overlapping
+    if distance < particle1.radius + particle2.radius:
+        # Calculate normal and tangential directions
+        normal = delta_pos / distance
+        tangent = np.array([-normal[1], normal[0]])
+
+        # Calculate current velocities using position differences
+        v1 = particle1.estimated_velocity()
+        v2 = particle2.estimated_velocity()
+
+        # Project velocities onto normal and tangential directions
+        v1_normal = np.dot(v1, normal)
+        v1_tangent = np.dot(v1, tangent)
+        v2_normal = np.dot(v2, normal)
+        v2_tangent = np.dot(v2, tangent)
+
+        # Only process collision if particles are approaching each other
+        if v2_normal - v1_normal < 0:
+            # Calculate total mass
+            M = particle1.mass + particle2.mass
+
+            # Calculate new normal velocities using conservation of momentum and energy
+            new_v1_normal = ((particle1.mass - particle2.mass) * v1_normal + 2 * particle2.mass * v2_normal) / M
+            new_v2_normal = ((particle2.mass - particle1.mass) * v2_normal + 2 * particle1.mass * v1_normal) / M
+
+            # Resolve overlap by moving particles apart
+            overlap = (particle1.radius + particle2.radius - distance)
+            move1 = overlap * particle2.mass / M
+            move2 = overlap * particle1.mass / M
+
+            # Move particles to avoid overlap
+            particle1.position = particle1.position + normal * move1
+            particle2.position = particle2.position - normal * move2
+
+            # Update previous positions to reflect new velocities
+            # For normal component
+            particle1.prev_position = particle1.position - (
+                new_v1_normal * normal + v1_tangent * tangent) * particle1.dt
+            particle2.prev_position = particle2.position - (
+                new_v2_normal * normal + v2_tangent * tangent) * particle2.dt
+
+
 def check_collision(particle1, particle2, delta_pos, distance):
     ''' Ellastic collisions '''
 
@@ -81,10 +125,10 @@ class Simulation:
         """Creates a list of Particle objects with initial conditions."""
         particles = []
         for _ in range(self.N):
-            pos = np.random.uniform([0, 0], [self.paredx, self.paredy])
+            radius = np.random.uniform(0.5, 5.5)
+            mass = radius * 4
+            pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
             vel = np.random.uniform([-1, -1], [1, 1])  # Random initial velocity
-            mass = np.random.uniform(1, 5)
-            radius = 0.1
             particles.append(Particle(pos, vel, radius, mass, self.dt))
         return particles
 
@@ -100,7 +144,7 @@ class Simulation:
                     delta = other.position - p.position
                     distance = np.linalg.norm(delta)
                     # Gravitational_forces(p, other, self.G, delta, distance)
-                    check_collision(p, other, delta, distance)
+                    check_collision_verlet(p, other, delta, distance)
 
     def update_positions(self):
         """Updates particle positions using Verlet integration."""
