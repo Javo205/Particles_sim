@@ -24,10 +24,6 @@ def update_frame(frame):
 
     pbar_sim.update(1)
     grid.update(particles)
-    for p in particles:
-        vel_viscossity(p, viscossity, dt)
-        p.update_verlet_scheme(dt)  # Move particles
-        # check_walls(p, 0, paredx, 0, paredy)
 
     # Check all pairwise collisions
     for p in particles:
@@ -39,6 +35,14 @@ def update_frame(frame):
                 distance = np.linalg.norm(delta)
                 # check_collision(p, other, delta, distance)
                 Gravitational_forces(p, other, G, delta, distance, dt)
+
+    for p in particles:
+        vel_viscossity(p, viscossity, dt)
+        p.update_verlet_scheme(dt)  # Move particles
+        # check_walls(p, 0, paredx, 0, paredy)
+
+    for p in particles:
+        p.acceleration = np.array([0.0, 0.0])
 
     # Update circle positions
     for i, p in enumerate(particles):

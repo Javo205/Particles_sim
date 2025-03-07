@@ -5,7 +5,7 @@ class Particle:
     def __init__(self, pos, vel, radius, mass, dt):
         self.position = pos
         self.velocity = vel
-        self.prevpos = self.position - self.velocity * dt
+        self.prev_position = self.position - self.velocity * dt
         self.acceleration = np.array([0, 0], dtype=float)
         self.radius = radius
         self.mass = mass
@@ -15,7 +15,7 @@ class Particle:
         self.position += self.velocity * dt
 
     def update_verlet_scheme(self, dt):
-        new_position = 2 * self.position - self.prevpos + self.acceleration * dt**2
+        new_position = 2 * self.position - self.prev_position + self.acceleration * dt**2
         self.prev_position = np.copy(self.position)
         self.position = new_position
 

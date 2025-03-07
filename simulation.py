@@ -40,11 +40,12 @@ def check_walls(particle, x_min, x_max, y_min, y_max):
 
 def Gravitational_forces(p1, p2, G, delta, distance, dt):
 
-    if distance > 0.1:  # Avoid singularity at zero distance
-        force_magnitude = G * (p1.mass * p2.mass) / (distance**2)
+    softening = 1e-2
+    if distance > softening:  # Avoid singularity at zero distance
+        force_magnitude = G * (p1.mass * p2.mass) / (distance**2 + softening**2)
         force_direction = delta / distance  # Normalize vector
         force = force_magnitude * force_direction
 
         # Apply Newton's Third Law (equal & opposite forces)
-        p1.acceleratiom = (force / p1.mass)
-        p2.acceleration = -(force / p2.mass)  # Opposite direction
+        p1.acceleration += (force / p1.mass)
+        p2.acceleration -= (force / p2.mass)  # Opposite direction
