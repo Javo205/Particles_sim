@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from objects import Particle, SpatialGrid
-from simulation import update, check_collision, check_walls, vel_viscossity, Gravitational_forces
+from simulation import check_collision, check_walls, vel_viscossity, Gravitational_forces
 from config import viscossity, paredx, paredy, dt, N, nframes, G
 from tqdm import tqdm
 
@@ -21,7 +21,7 @@ def update_frame(frame):
     grid.update(particles)
     for p in particles:
         vel_viscossity(p, viscossity, dt)
-        update(p, dt)  # Move particles
+        p.update_newton_scheme(dt)  # Move particles
         # check_walls(p, 0, paredx, 0, paredy)
 
     # Check all pairwise collisions
@@ -32,7 +32,7 @@ def update_frame(frame):
             if p is not other:
                 delta = other.position - p.position
                 distance = np.linalg.norm(delta)
-                check_collision(p, other, delta, distance)
+                # check_collision(p, other, delta, distance)
                 Gravitational_forces(p, other, G, delta, distance, dt)
 
     # Update circle positions
@@ -45,15 +45,19 @@ def update_frame(frame):
 # Initialise the particles
 
 center = np.array([paredx / 2, paredy / 2])
-radius = np.ones(N) + np.array([30, 0, 0])
-mass = np.array([80, 1, 1])
-posx = np.array([center[0], center[0] - 50, center[0] - 70])
-posy = np.array([center[1], center[0] - 50, center[0] - 70])
-velx = np.array([0, -5, -3])
-vely = np.array([0, 5, 3])
+radius = np.ones(N)  # + np.array([30, 0, 0])
+mass = np.array([3, 3, 3])
 
-particles = [Particle(posx[i], posy[i],
-                      velx[i], vely[i], radius[i], mass[i]) for i in range(N)]
+pos = np.array([[center[0], center[1]],
+                [center[0] - 20, center[0] - 20],
+                [center[0] + 30, center[0] - 35]], dtype=float)
+
+vel = np.array([[0, 0],
+                [-2, 1],
+                [0, 1]], dtype=float)
+
+particles = [Particle(pos[i], vel[i],
+                      radius[i], mass[i]) for i in range(N)]
 
 # Plotting configuration
 
@@ -79,5 +83,5 @@ if not os.path.exists(save_directory):
     os.makedirs(save_directory)
 
 writer = animation.FFMpegWriter(fps=30, bitrate=1800)
-ani.save(os.path.join(plot_dir, 'particles2.mp4'), writer=writer)
+ani.save(os.path.join(plot_dir, 'particles_update.mp4'), writer=writer)
 pbar_sim.close()

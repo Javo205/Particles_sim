@@ -2,11 +2,22 @@ import numpy as np
 
 
 class Particle:
-    def __init__(self, x, y, vx, vy, radius, mass):
-        self.position = np.array([x, y], dtype=float)
-        self.velocity = np.array([vx, vy], dtype=float)
+    def __init__(self, pos, vel, radius, mass, dt):
+        self.position = pos
+        self.prevpos = self.position - self.velocity * dt
+        self.velocity = vel
+        self.acceleration = np.array([0, 0], dtype=float)
         self.radius = radius
         self.mass = mass
+
+    def update_newton_scheme(self, dt):
+        self.velocity += self.acceleration * dt
+        self.position += self.velocity * dt
+
+    def update_verlet_scheme(self, dt):
+        new_position = 2 * self.position - self.prevpos + self.acceleration * dt**2
+        self.prev_position = np.copy(self.position)
+        self.position = new_position
 
 
 class SpatialGrid:
