@@ -4,8 +4,8 @@ import numpy as np
 class Particle:
     def __init__(self, pos, vel, radius, mass, dt):
         self.position = pos
-        self.prevpos = self.position - self.velocity * dt
         self.velocity = vel
+        self.prevpos = self.position - self.velocity * dt
         self.acceleration = np.array([0, 0], dtype=float)
         self.radius = radius
         self.mass = mass

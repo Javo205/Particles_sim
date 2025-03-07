@@ -62,7 +62,7 @@ vel = np.array([[0, 0],
                 [0, 1]], dtype=float)
 
 particles = [Particle(pos[i], vel[i],
-                      radius[i], mass[i]) for i in range(N)]
+                      radius[i], mass[i], dt) for i in range(N)]
 
 # Plotting configuration
 
