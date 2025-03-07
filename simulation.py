@@ -114,9 +114,15 @@ class Simulation:
         self.grid = SpatialGrid(cell_size=80)
 
         # 🔹 Setup Matplotlib figure for animation
+        box = np.array([[0, 0], [self.paredx, 0], [self.paredx, self.paredy], [0, self.paredy], [0, 0]])
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, self.paredx)
         self.ax.set_ylim(0, self.paredy)
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+        self.ax.axis('off')
+        self.ax.axis('equal')
+        self.ax.plot(box[:, 0], box[:, 1], 'k', alpha=.6)
         self.circles = [plt.Circle(p.position, p.radius, color='b') for p in self.particles]
         for circle in self.circles:
             self.ax.add_patch(circle)
@@ -125,7 +131,7 @@ class Simulation:
         """Creates a list of Particle objects with initial conditions."""
         particles = []
         for _ in range(self.N):
-            radius = np.random.uniform(0.5, 5.5)
+            radius = np.random.uniform(0.5, 2.5)
             mass = radius * 4
             pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
             vel = np.random.uniform([-1, -1], [1, 1])  # Random initial velocity

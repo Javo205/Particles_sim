@@ -1,13 +1,13 @@
 {
     "simulation":{
         "dt": 0.3,
-        "nframes": 400,
+        "nframes": 4000,
         "plot_dir": "Visuals"
     },
     "physics":{
-        "paredx": 100,
-        "paredy": 100,
-        "N": 30,
+        "paredx": 200,
+        "paredy": 200,
+        "N": 300,
         "G": 15,
         "viscosity": 0
     }
