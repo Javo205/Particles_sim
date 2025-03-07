@@ -9,22 +9,44 @@ class Particle:
         self.acceleration = np.array([0, 0], dtype=float)
         self.radius = radius
         self.mass = mass
+        self.dt = dt
+
+    def estimated_velocity(self):
+        """Estimate velocity using finite differences (Verlet-compatible)."""
+        return (self.position - self.prev_position) / self.dt
 
     def update_newton_scheme(self, dt):
         self.velocity += self.acceleration * dt
         self.position += self.velocity * dt
 
     def update_verlet_scheme(self, dt):
-        new_position = 2 * self.position - self.prev_position + self.acceleration * dt**2
+        new_position = 2 * self.position - self.prev_position + self.acceleration * self.dt**2
         self.prev_position = np.copy(self.position)
         self.position = new_position
 
     def check_walls(self, x_min, x_max, y_min, y_max):
-        if self.position[0] - self.radius <= x_min and self.velocity[0] < 0 or self.position[0] + self.radius >= x_max and self.velocity[0] > 0:
-            self.velocity[0] *= -1
+        vx = self.estimated_velocity()[0]
+        vy = self.estimated_velocity()[1]
 
-        if self.position[1] - self.radius <= y_min and self.velocity[1] < 0 or self.position[1] + self.radius >= y_max and self.velocity[1] > 0:
-            self.velocity[1] *= -1
+        # Left wall collision
+        if self.position[0] <= x_min + self.radius and self.prev_position[0] > x_min:
+            self.position[0] = x_min + self.radius
+            self.prev_position[0] = self.position[0] + (self.position[0] - self.prev_position[0])  # Reverse direction
+
+        # Right wall collision
+        if self.position[0] + self.radius >= x_max and self.prev_position[0] < x_max:
+            self.position[0] = x_max - self.radius
+            self.prev_position[0] = self.position[0] + (self.position[0] - self.prev_position[0])  # Reverse direction
+
+        # Bottom wall collision
+        if self.position[1] - self.radius <= y_min and self.prev_position[1] > y_min:
+            self.position[1] = y_min + self.radius
+            self.prev_position[1] = self.position[1] + (self.position[1] - self.prev_position[1])  # Reverse direction
+
+        # Top wall collision
+        if self.position[1] + self.radius >= y_max and self.prev_position[1] < y_max:
+            self.position[1] = y_max - self.radius
+            self.prev_position[1] = self.position[1] + (self.position[1] - self.prev_position[1])  # Reverse direction
 
 
 class SpatialGrid:
