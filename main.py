@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from objects import Particle, SpatialGrid
-from simulation import check_collision, check_walls, vel_viscossity, Gravitational_forces
+from simulation import check_collision, vel_viscossity, Gravitational_forces
 from tqdm import tqdm
 from utils import load_config
 
@@ -39,7 +39,7 @@ def update_frame(frame):
     for p in particles:
         vel_viscossity(p, viscossity, dt)
         p.update_verlet_scheme(dt)  # Move particles
-        # check_walls(p, 0, paredx, 0, paredy)
+        # p.check_walls(0, paredx, 0, paredy)
 
     for p in particles:
         p.acceleration = np.array([0.0, 0.0])

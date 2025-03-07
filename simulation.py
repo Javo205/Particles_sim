@@ -30,14 +30,6 @@ def check_collision(particle1, particle2, delta_pos, distance):
             particle2.velocity = u2 * normal + v2_perp * perp
 
 
-def check_walls(particle, x_min, x_max, y_min, y_max):
-    if particle.position[0] - particle.radius <= x_min and particle.velocity[0] < 0 or particle.position[0] + particle.radius >= x_max and particle.velocity[0] > 0:
-        particle.velocity[0] *= -1
-
-    if particle.position[1] - particle.radius <= y_min and particle.velocity[1] < 0 or particle.position[1] + particle.radius >= y_max and particle.velocity[1] > 0:
-        particle.velocity[1] *= -1
-
-
 def Gravitational_forces(p1, p2, G, delta, distance, dt):
 
     softening = 1e-2

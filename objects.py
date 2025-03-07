@@ -19,6 +19,13 @@ class Particle:
         self.prev_position = np.copy(self.position)
         self.position = new_position
 
+    def check_walls(self, x_min, x_max, y_min, y_max):
+        if self.position[0] - self.radius <= x_min and self.velocity[0] < 0 or self.position[0] + self.radius >= x_max and self.velocity[0] > 0:
+            self.velocity[0] *= -1
+
+        if self.position[1] - self.radius <= y_min and self.velocity[1] < 0 or self.position[1] + self.radius >= y_max and self.velocity[1] > 0:
+            self.velocity[1] *= -1
+
 
 class SpatialGrid:
     def __init__(self, cell_size):
