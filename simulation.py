@@ -104,6 +104,8 @@ class Simulation:
         self.N = self.config.physics.N
         self.G = self.config.physics.G
         self.viscosity = self.config.physics.viscosity
+        self.gravity_interaction = self.config.toggle.gravity_interaction
+        self.wall_interaction = self.config.toggle.wall_interaction
 
         # Initialize particles
         self.particles = self.initialize_particles()
@@ -149,7 +151,9 @@ class Simulation:
                 if p is not other:
                     delta = other.position - p.position
                     distance = np.linalg.norm(delta)
-                    # Gravitational_forces(p, other, self.G, delta, distance)
+                    if self.gravity_interaction:
+                        Gravitational_forces(p, other, self.G, delta, distance)
+
                     check_collision_verlet(p, other, delta, distance)
 
     def update_positions(self):
@@ -157,7 +161,8 @@ class Simulation:
         for p in self.particles:
             p.vel_viscossity(self.viscosity, self.dt)  # Apply viscosity
             p.update_verlet_scheme(self.dt)  # Move particle
-            p.check_walls(0, self.paredx, 0, self.paredy)
+            if self.wall_interaction:
+                p.check_walls(0, self.paredx, 0, self.paredy)
 
     def animate(self, frame):
         """Update function for Matplotlib animation."""

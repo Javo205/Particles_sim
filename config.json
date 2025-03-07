@@ -10,5 +10,9 @@
         "N": 3,
         "G": 10,
         "viscosity": 0.01
+    },
+    "toggle":{
+        "gravity_interaction": 0,
+        "wall_interaction": 0
     }
 }
