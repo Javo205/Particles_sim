@@ -1,0 +1,13 @@
+{
+    "simulation":{
+        "dt": 0.3,
+        "nframes": 400
+    },
+    "physics":{
+        "paredx": 300,
+        "paredy": 300,
+        "N": 3,
+        "G": 15,
+        "viscossity": 0
+    }
+}

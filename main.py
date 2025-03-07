@@ -5,8 +5,13 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from objects import Particle, SpatialGrid
 from simulation import check_collision, check_walls, vel_viscossity, Gravitational_forces
-from config import viscossity, paredx, paredy, dt, N, nframes, G
 from tqdm import tqdm
+from utils import load_config
+
+config = load_config()
+dt, nframes = config['simulation']['dt'], config['simulation']['nframes']
+paredx, paredy = config['physics']['paredx'], config['physics']['paredy']
+N, G, viscossity = config['physics']['N'], config['physics']['G'], config['physics']['viscossity']
 
 os.environ["FFMPEG_BINARY"] = "/usr/bin/ffmpeg"
 plot_dir = 'Visuals'
