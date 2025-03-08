@@ -1,10 +1,33 @@
 import numpy as np
-from objects import Particle, SpatialGrid
+from objects import Particle, SpatialGrid, KDTreeNeighborSearch
 from utils import load_config
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import os
 from tqdm import tqdm
+
+
+def compute_optimized_parameters(N, avg_radius, config):
+    """Dynamically determine optimal search radius and cell size."""
+    if N < 500:
+        cell_factor = 2.0
+    elif N < 5000:
+        cell_factor = 3.0
+    else:
+        cell_factor = 5.0
+
+    search_radius = 2.5 * avg_radius  # For collision detection
+    gravity_radius = 10.0 * avg_radius  # For gravitational forces
+    cell_size = cell_factor * avg_radius
+
+    if config.physics.search_method == "Grid":
+        return cell_size
+
+    elif config.physics.search_method == "KDTree":
+        if not config.toggle.gravity_interaction:
+            return search_radius
+        else:
+            return gravity_radius
 
 
 def check_collision_verlet(particle1, particle2, delta_pos, distance):
@@ -104,16 +127,22 @@ class Simulation:
         self.N = self.config.physics.N
         self.G = self.config.physics.G
         self.viscosity = self.config.physics.viscosity
+        self.search_method = self.config.physics.search_method
+        self.gravity_interaction = self.config.toggle.gravity_interaction
+        self.wall_interaction = self.config.toggle.wall_interaction
 
         # Initialize particles
         self.particles = self.initialize_particles()
-
+        self.search_parameter = compute_optimized_parameters(self.N, self.rad_sum / self.N, self.config)
         # Initialize spatial grid for collision handling
-        self.grid = SpatialGrid(cell_size=80)
+        if self.search_method == "Grid":
+            self.grid = SpatialGrid(cell_size=self.search_parameter)
 
-        # 🔹 Setup Matplotlib figure for animation
+        elif self.search_method == "KDTree":
+            self.grid = KDTreeNeighborSearch(self.particles, self.search_parameter)
+
+        # Setup Matplotlib figure for animation
         self.pbar_sim = tqdm(total=self.nframes, desc="Simulating Physics")
-        box = np.array([[0, 0], [self.paredx, 0], [self.paredx, self.paredy], [0, self.paredy], [0, 0]])
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, self.paredx)
         self.ax.set_ylim(0, self.paredy)
@@ -121,7 +150,9 @@ class Simulation:
         self.ax.set_yticks([])
         self.ax.axis('off')
         self.ax.axis('equal')
-        self.ax.plot(box[:, 0], box[:, 1], 'k', alpha=.6)
+        if self.wall_interaction:
+            box = np.array([[0, 0], [self.paredx, 0], [self.paredx, self.paredy], [0, self.paredy], [0, 0]])
+            self.ax.plot(box[:, 0], box[:, 1], 'k', alpha=.6)
         self.circles = [plt.Circle(p.position, p.radius, color='b') for p in self.particles]
         for circle in self.circles:
             self.ax.add_patch(circle)
@@ -130,16 +161,18 @@ class Simulation:
     def initialize_particles(self):
         """Creates a list of Particle objects with initial conditions."""
         particles = []
+        self.rad_sum = 0
         for i in range(self.N):
-            radius = i + 4
-            mass = radius * i + 4
-            pos = np.array([self.paredx / 2 + 10 * i, self.paredx / 2 + 10 * i])
+            radius = np.random.uniform(0.5, 1.5) * 30
+            mass = radius * np.random.uniform(2, 2.5)
+            pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
             vel = np.random.uniform([-1, -1], [1, 1]) * 30  # Random initial velocity
             particles.append(Particle(pos, vel, radius, mass, self.dt))
+            self.rad_sum += radius
         return particles
 
     def compute_interactions(self):
-        """Computes forces on all particles due to gravity."""
+        """Computes interactions particle - particle."""
         for p in self.particles:
             p.acceleration = np.array([0.0, 0.0])  # Reset acceleration
 
@@ -149,7 +182,9 @@ class Simulation:
                 if p is not other:
                     delta = other.position - p.position
                     distance = np.linalg.norm(delta)
-                    # Gravitational_forces(p, other, self.G, delta, distance)
+                    if self.gravity_interaction:
+                        Gravitational_forces(p, other, self.G, delta, distance)
+
                     check_collision_verlet(p, other, delta, distance)
 
     def update_positions(self):
@@ -157,7 +192,8 @@ class Simulation:
         for p in self.particles:
             p.vel_viscossity(self.viscosity, self.dt)  # Apply viscosity
             p.update_verlet_scheme(self.dt)  # Move particle
-            p.check_walls(0, self.paredx, 0, self.paredy)
+            if self.wall_interaction:
+                p.check_walls(0, self.paredx, 0, self.paredy)
 
     def animate(self, frame):
         """Update function for Matplotlib animation."""

@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.spatial as spatial
 
 
 # TODO: change particle color based on speed
@@ -102,3 +103,22 @@ class SpatialGrid:
         self.grid.clear()
         for p in particles:
             self.add_particle(p)
+
+
+# TODO: ckdtree maybe gives better performance CHECK
+class KDTreeNeighborSearch:
+    def __init__(self, particles, search_radius):
+        """ Initializes the KDTree using particle positions"""
+        self.search_radius = search_radius
+        self.update(particles)
+
+    def update(self, particles):
+        """ Rebuilds the KDTree """
+        self.particles = particles
+        positions = np.array([p.position for p in particles])
+        self.tree = spatial.cKDTree(positions)
+
+    def get_nearby_particles(self, particle):
+        """ Returns nearby particles using KDTree's fast query"""
+        indices = self.tree.query_ball_point(particle.position, self.search_radius)
+        return [self.particles[i] for i in indices if self.particles[i] is not particle]
