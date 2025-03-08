@@ -130,10 +130,12 @@ class Simulation:
         self.search_method = self.config.physics.search_method
         self.gravity_interaction = self.config.toggle.gravity_interaction
         self.wall_interaction = self.config.toggle.wall_interaction
+        self.particle_initialization = self.config.particle_initialization
 
         # Initialize particles
         self.particles = self.initialize_particles()
         self.search_parameter = compute_optimized_parameters(self.N, self.rad_sum / self.N, self.config)
+
         # Initialize spatial grid for collision handling
         if self.search_method == "Grid":
             self.grid = SpatialGrid(cell_size=self.search_parameter)
@@ -161,14 +163,54 @@ class Simulation:
     def initialize_particles(self):
         """Creates a list of Particle objects with initial conditions."""
         particles = []
-        self.rad_sum = 0
-        for i in range(self.N):
-            radius = np.random.uniform(0.5, 1.5) * 30
-            mass = radius * np.random.uniform(2, 2.5)
-            pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
-            vel = np.random.uniform([-1, -1], [1, 1]) * 30  # Random initial velocity
-            particles.append(Particle(pos, vel, radius, mass, self.dt))
-            self.rad_sum += radius
+
+        if self.particle_initialization == "random":
+            self.rad_sum = 0
+            for i in range(self.N):
+                radius = np.random.uniform(0.5, 1.5) * 30
+                mass = radius * np.random.uniform(2, 2.5)
+                pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
+                vel = np.random.uniform([-1, -1], [1, 1]) * 30  # Random initial velocity
+                particles.append(Particle(pos, vel, radius, mass, self.dt))
+                self.rad_sum += radius
+
+        elif self.particle_initialization == "gravitation1":
+            self.gravity_interaction = 1
+            self.wall_interaction = 0
+            self.N = 3
+            self.paredx = 100
+            self.paredy = 100
+            radius = np.array([10, 1, 0.1])
+            mass = np.array([70, 1, 0.06])
+            pos = np.array([[self.paredx / 2, self.paredy / 2],
+                            [self.paredx / 2 - 22, self.paredy / 2 - 22],
+                            [self.paredx / 2 - 24.2, self.paredy / 2 - 24.2]])
+            vel = np.array([[0, 0],
+                            [-4, 4],
+                            [-5.6, 5.6]])
+            for i in range(3):
+                particles.append(Particle(pos[i], vel[i], radius[i], mass[i], self.dt))
+
+            self.rad_sum = np.sum(radius)
+
+        elif self.particle_initialization == "gravitation2":
+            self.gravity_interaction = 1
+            self.wall_interaction = 0
+            self.N = 3
+            self.paredx = 100
+            self.paredy = 100
+            radius = np.array([10, 1, 1])
+            mass = np.array([70, 1, 1])
+            pos = np.array([[self.paredx / 2, self.paredy / 2],
+                            [self.paredx / 2 - 15, self.paredy / 2 - 15],
+                            [self.paredx / 2, self.paredy / 2 - 25]])
+            vel = np.array([[0, 0],
+                            [-5, 5],
+                            [5, 0]])
+            for i in range(3):
+                particles.append(Particle(pos[i], vel[i], radius[i], mass[i], self.dt))
+
+            self.rad_sum = np.sum(radius)
         return particles
 
     def compute_interactions(self):
