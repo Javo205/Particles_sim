@@ -31,10 +31,13 @@ class Particle:
         velocity = -viscossity * velocity
         self.prev_position = self.prev_position - velocity * self.dt
 
+    def add_Gravity(self, grav):
+        self.acceleration += np.array([0, grav])
+
     def check_walls(self, x_min, x_max, y_min, y_max):
         """Handle wall collisions with Verlet integration"""
         # Calculate current velocity from positions
-        damping = 1.0
+        damping = 0.9
         velocity = (self.position - self.prev_position) / self.dt
 
         # Left wall collision

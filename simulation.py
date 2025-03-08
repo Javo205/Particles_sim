@@ -17,7 +17,7 @@ def compute_optimized_parameters(N, avg_radius, config):
         cell_factor = 5.0
 
     search_radius = 2.5 * avg_radius  # For collision detection
-    gravity_radius = 10.0 * avg_radius  # For gravitational forces
+    gravity_radius = 50.0 * avg_radius  # For gravitational forces
     cell_size = cell_factor * avg_radius
 
     if config.physics.search_method == "Grid":
@@ -120,12 +120,14 @@ class Simulation:
 
         # Extract parameters from config
         self.dt = self.config.simulation.dt
-        self.nframes = self.config.simulation.nframes
+        self.total_animation_frames = self.config.simulation.nframes // self.config.simulation.physics_steps_per_frame
+
         self.plot_dir = self.config.simulation.plot_dir
         self.paredx = self.config.physics.paredx
         self.paredy = self.config.physics.paredy
         self.N = self.config.physics.N
         self.G = self.config.physics.G
+        self.g = self.config.physics.g
         self.viscosity = self.config.physics.viscosity
         self.search_method = self.config.physics.search_method
         self.gravity_interaction = self.config.toggle.gravity_interaction
@@ -144,7 +146,7 @@ class Simulation:
             self.grid = KDTreeNeighborSearch(self.particles, self.search_parameter)
 
         # Setup Matplotlib figure for animation
-        self.pbar_sim = tqdm(total=self.nframes, desc="Simulating Physics")
+        self.pbar_sim = tqdm(total=self.total_animation_frames, desc="Simulating Physics")
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, self.paredx)
         self.ax.set_ylim(0, self.paredy)
@@ -211,6 +213,34 @@ class Simulation:
                 particles.append(Particle(pos[i], vel[i], radius[i], mass[i], self.dt))
 
             self.rad_sum = np.sum(radius)
+
+        elif self.particle_initialization == "grid":
+            rows = int(np.sqrt(self.N))  # Approximate number of rows
+            cols = int(np.ceil(self.N / rows))  # Compute columns to fit N
+
+            # Compute spacing between particles
+            x_spacing = self.paredx / (cols + 1)  # Leave margins
+            y_spacing = self.paredy / (rows + 1)
+
+            # Assign positions
+            index = 0
+            for i in range(rows):
+                for j in range(cols):
+                    if index >= self.N:
+                        break  # Stop if we placed all N particles
+
+                    # Compute position (avoid boundaries)
+                    x_pos = (j + 1) * x_spacing
+                    y_pos = (i + 1) * y_spacing
+
+                    radius = np.random.uniform(0.5, 1.5)  # Set radius
+                    mass = radius * np.random.uniform(2, 2.5)  # Set mass
+                    vel = np.random.uniform(0, 0.5) * 0  # Initial velocity
+
+                    particles.append(Particle(np.array([x_pos, y_pos]), vel, radius, mass, self.dt))
+                    index += 1
+
+            self.rad_sum = sum(p.radius for p in particles)  # Update radius sum
         return particles
 
     def compute_interactions(self):
@@ -233,6 +263,7 @@ class Simulation:
         """Updates particle positions using Verlet integration."""
         for p in self.particles:
             p.vel_viscossity(self.viscosity, self.dt)  # Apply viscosity
+            p.add_Gravity(self.g)  # Sum gravity forces
             p.update_verlet_scheme(self.dt)  # Move particle
             if self.wall_interaction:
                 p.check_walls(0, self.paredx, 0, self.paredy)
@@ -259,10 +290,31 @@ class Simulation:
         Writer = animation.FFMpegWriter
         writer = Writer(fps=fps, metadata=dict(artist="Simulation"), bitrate=1800)
 
-        # Create the animation
-        anim = animation.FuncAnimation(self.fig, self.animate, frames=self.nframes, interval=self.dt * 1000, blit=True)
+        # Modified animation function that performs multiple physics steps
+        def animate_wrapper(frame):
+            for _ in range(self.config.simulation.physics_steps_per_frame):
+                self.grid.update(self.particles)
+                self.compute_interactions()
+                self.update_positions()
 
-        # Save as a video file
+            # Update circle positions for rendering
+            for i, p in enumerate(self.particles):
+                self.circles[i].center = p.position
+
+            self.pbar_sim.update(1)
+            return self.circles
+
+        # Create animation with fewer frames but same physics accuracy
+
+        anim = animation.FuncAnimation(
+            self.fig,
+            animate_wrapper,
+            frames=self.total_animation_frames,
+            interval=self.dt * self.config.simulation.physics_steps_per_frame * 1000,
+            blit=True
+        )
+
+        # Save as video file
         anim.save(os.path.join(self.plot_dir, filename), writer=writer)
         self.pbar_sim.close()
         print(f"Animation saved successfully as {filename}!")
