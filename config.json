@@ -5,14 +5,15 @@
         "plot_dir": "Visuals"
     },
     "physics":{
-        "paredx": 200,
-        "paredy": 200,
-        "N": 3,
+        "paredx": 2000,
+        "paredy": 2000,
+        "N": 1000,
         "G": 10,
-        "viscosity": 0.01
+        "viscosity": 0.001,
+        "search_method": "Grid" 
     },
     "toggle":{
         "gravity_interaction": 0,
-        "wall_interaction": 0
+        "wall_interaction": 1
     }
 }

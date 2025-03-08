@@ -1,5 +1,5 @@
 import numpy as np
-from objects import Particle, SpatialGrid
+from objects import Particle, SpatialGrid, KDTreeNeighborSearch
 from utils import load_config
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -104,6 +104,7 @@ class Simulation:
         self.N = self.config.physics.N
         self.G = self.config.physics.G
         self.viscosity = self.config.physics.viscosity
+        self.search_method = self.config.physics.search_method
         self.gravity_interaction = self.config.toggle.gravity_interaction
         self.wall_interaction = self.config.toggle.wall_interaction
 
@@ -111,11 +112,14 @@ class Simulation:
         self.particles = self.initialize_particles()
 
         # Initialize spatial grid for collision handling
-        self.grid = SpatialGrid(cell_size=80)
+        if self.search_method == "Grid":
+            self.grid = SpatialGrid(cell_size=self.paredx / np.sqrt(self.N))
 
-        # 🔹 Setup Matplotlib figure for animation
+        elif self.search_method == "KDTree":
+            self.grid = KDTreeNeighborSearch(self.particles, 10)
+
+        # Setup Matplotlib figure for animation
         self.pbar_sim = tqdm(total=self.nframes, desc="Simulating Physics")
-        box = np.array([[0, 0], [self.paredx, 0], [self.paredx, self.paredy], [0, self.paredy], [0, 0]])
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, self.paredx)
         self.ax.set_ylim(0, self.paredy)
@@ -123,7 +127,9 @@ class Simulation:
         self.ax.set_yticks([])
         self.ax.axis('off')
         self.ax.axis('equal')
-        self.ax.plot(box[:, 0], box[:, 1], 'k', alpha=.6)
+        if self.wall_interaction:
+            box = np.array([[0, 0], [self.paredx, 0], [self.paredx, self.paredy], [0, self.paredy], [0, 0]])
+            self.ax.plot(box[:, 0], box[:, 1], 'k', alpha=.6)
         self.circles = [plt.Circle(p.position, p.radius, color='b') for p in self.particles]
         for circle in self.circles:
             self.ax.add_patch(circle)
@@ -133,10 +139,10 @@ class Simulation:
         """Creates a list of Particle objects with initial conditions."""
         particles = []
         for i in range(self.N):
-            radius = i + 4
-            mass = radius * i + 4
-            pos = np.array([self.paredx / 2 + 10 * i, self.paredx / 2 + 10 * i])
-            vel = np.random.uniform([-1, -1], [1, 1]) * 30  # Random initial velocity
+            radius = np.random.uniform(1, 3) * 5
+            mass = radius * np.random.uniform(2, 2.5)
+            pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
+            vel = np.random.uniform([-1, -1], [1, 1]) * 50  # Random initial velocity
             particles.append(Particle(pos, vel, radius, mass, self.dt))
         return particles
 
