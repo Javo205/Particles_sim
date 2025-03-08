@@ -1,16 +1,16 @@
 {
     "simulation":{
-        "dt": 0.2,
+        "dt": 0.4,
         "nframes": 1000,
         "plot_dir": "Visuals"
     },
     "physics":{
-        "paredx": 2000,
-        "paredy": 2000,
+        "paredx": 5000,
+        "paredy": 5000,
         "N": 1000,
         "G": 10,
         "viscosity": 0.001,
-        "search_method": "Grid" 
+        "search_method": "KDTree" 
     },
     "toggle":{
         "gravity_interaction": 0,

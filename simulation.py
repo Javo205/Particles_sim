@@ -7,6 +7,29 @@ import os
 from tqdm import tqdm
 
 
+def compute_optimized_parameters(N, avg_radius, config):
+    """Dynamically determine optimal search radius and cell size."""
+    if N < 500:
+        cell_factor = 2.0
+    elif N < 5000:
+        cell_factor = 3.0
+    else:
+        cell_factor = 5.0
+
+    search_radius = 2.5 * avg_radius  # For collision detection
+    gravity_radius = 10.0 * avg_radius  # For gravitational forces
+    cell_size = cell_factor * avg_radius
+
+    if config.physics.search_method == "Grid":
+        return cell_size
+
+    elif config.physics.search_method == "KDTree":
+        if not config.toggle.gravity_interaction:
+            return search_radius
+        else:
+            return gravity_radius
+
+
 def check_collision_verlet(particle1, particle2, delta_pos, distance):
     """Elastic collisions for Verlet integration"""
     # Check if particles are overlapping
@@ -110,13 +133,13 @@ class Simulation:
 
         # Initialize particles
         self.particles = self.initialize_particles()
-
+        self.search_parameter = compute_optimized_parameters(self.N, self.rad_sum / self.N, self.config)
         # Initialize spatial grid for collision handling
         if self.search_method == "Grid":
-            self.grid = SpatialGrid(cell_size=self.paredx / np.sqrt(self.N))
+            self.grid = SpatialGrid(cell_size=self.search_parameter)
 
         elif self.search_method == "KDTree":
-            self.grid = KDTreeNeighborSearch(self.particles, 10)
+            self.grid = KDTreeNeighborSearch(self.particles, self.search_parameter)
 
         # Setup Matplotlib figure for animation
         self.pbar_sim = tqdm(total=self.nframes, desc="Simulating Physics")
@@ -138,16 +161,18 @@ class Simulation:
     def initialize_particles(self):
         """Creates a list of Particle objects with initial conditions."""
         particles = []
+        self.rad_sum = 0
         for i in range(self.N):
-            radius = np.random.uniform(1, 3) * 5
+            radius = np.random.uniform(0.5, 1.5) * 30
             mass = radius * np.random.uniform(2, 2.5)
             pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
-            vel = np.random.uniform([-1, -1], [1, 1]) * 50  # Random initial velocity
+            vel = np.random.uniform([-1, -1], [1, 1]) * 30  # Random initial velocity
             particles.append(Particle(pos, vel, radius, mass, self.dt))
+            self.rad_sum += radius
         return particles
 
     def compute_interactions(self):
-        """Computes forces on all particles due to gravity."""
+        """Computes interactions particle - particle."""
         for p in self.particles:
             p.acceleration = np.array([0.0, 0.0])  # Reset acceleration
 
