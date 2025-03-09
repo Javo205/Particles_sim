@@ -30,6 +30,23 @@ def compute_optimized_parameters(N, avg_radius, config):
             return gravity_radius
 
 
+def only_overlap(particle1, particle2, delta_pos, distance):
+
+    # Check if particles are overlapping
+    if distance < particle1.radius + particle2.radius:
+        # Calculate normal and tangential directions
+        normal = delta_pos / distance
+        # Resolve overlap by moving particles apart
+        M = particle1.mass + particle2.mass
+        overlap = (particle1.radius + particle2.radius - distance)
+        move1 = overlap * particle2.mass / M
+        move2 = overlap * particle1.mass / M
+
+        # Move particles to avoid overlap
+        particle1.position += normal * move1
+        particle2.position -= normal * move2
+
+
 def check_collision_verlet(particle1, particle2, delta_pos, distance):
     """Elastic collisions for Verlet integration"""
     # Check if particles are overlapping
@@ -235,7 +252,7 @@ class Simulation:
 
                     radius = np.random.uniform(0.5, 1.5)  # Set radius
                     mass = radius * np.random.uniform(2, 2.5)  # Set mass
-                    vel = np.random.uniform(0, 0.5) * 0  # Initial velocity
+                    vel = np.random.uniform([-1, -1], [1, 1]) * 5  # Initial velocity
 
                     particles.append(Particle(np.array([x_pos, y_pos]), vel, radius, mass, self.dt))
                     index += 1
@@ -243,35 +260,35 @@ class Simulation:
             self.rad_sum = sum(p.radius for p in particles)  # Update radius sum
         return particles
 
-    def compute_interactions(self):
+    def compute_interactions(self, p):
         """Computes interactions particle - particle."""
-        for p in self.particles:
-            p.acceleration = np.array([0.0, 0.0])  # Reset acceleration
+        neighbors = self.grid.get_nearby_particles(p)
+        for other in neighbors:
+            if p is not other:
+                delta = other.position - p.position
+                distance = np.linalg.norm(delta)
+                if self.gravity_interaction:
+                    Gravitational_forces(p, other, self.G, delta, distance)
 
-        for p in self.particles:
-            neighbors = self.grid.get_nearby_particles(p)
-            for other in neighbors:
-                if p is not other:
-                    delta = other.position - p.position
-                    distance = np.linalg.norm(delta)
-                    if self.gravity_interaction:
-                        Gravitational_forces(p, other, self.G, delta, distance)
-
-                    check_collision_verlet(p, other, delta, distance)
+                check_collision_verlet(p, other, delta, distance)
+                # only_overlap(p, other, delta, distance)
 
     def update_positions(self):
         """Updates particle positions using Verlet integration."""
         for p in self.particles:
+            p.acceleration = np.array([0.0, 0.0])  # Reset acceleration
+
+        for p in self.particles:
             p.vel_viscossity(self.viscosity, self.dt)  # Apply viscosity
             p.add_Gravity(self.g)  # Sum gravity forces
-            p.update_verlet_scheme(self.dt)  # Move particle
             if self.wall_interaction:
                 p.check_walls(0, self.paredx, 0, self.paredy)
+            self.compute_interactions(p)  # Compute forces
+            p.update_verlet_scheme(self.dt)  # Move particle
 
     def animate(self, frame):
         """Update function for Matplotlib animation."""
         self.grid.update(self.particles)  # Update spatial grid
-        self.compute_interactions()  # Compute forces
         self.update_positions()  # Move particles
 
         # Update circle positions
@@ -290,11 +307,10 @@ class Simulation:
         Writer = animation.FFMpegWriter
         writer = Writer(fps=fps, metadata=dict(artist="Simulation"), bitrate=1800)
 
-        # Modified animation function that performs multiple physics steps
+        # Perform a number of substep simuation frames before rendering
         def animate_wrapper(frame):
             for _ in range(self.config.simulation.physics_steps_per_frame):
                 self.grid.update(self.particles)
-                self.compute_interactions()
                 self.update_positions()
 
             # Update circle positions for rendering
@@ -303,8 +319,6 @@ class Simulation:
 
             self.pbar_sim.update(1)
             return self.circles
-
-        # Create animation with fewer frames but same physics accuracy
 
         anim = animation.FuncAnimation(
             self.fig,
