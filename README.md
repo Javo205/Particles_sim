@@ -26,23 +26,27 @@ AI has been a valuable tool in its development—currently, I focus more on unde
 The `config.json` file allows customization of the simulation
    ```json
 {
-    "simulation": {
-        "dt": 0.4,
-        "nframes": 1000,
+    "simulation":{
+        "dt": 0.005,
+        "nframes": 5000,
+        "physics_steps_per_frame": 10,
         "plot_dir": "Visuals"
     },
-    "physics": {
-        "paredx": 5000,
-        "paredy": 5000,
-        "N": 1000,
+    "physics":{
+        "paredx": 100,
+        "paredy": 100,
+        "N": 40,
         "G": 10,
-        "viscosity": 0.001,
-        "search_method": "KDTree"
+        "g": -7,
+        "viscosity": 0,
+        "search_method": "Grid" 
     },
-    "toggle": {
+    "toggle":{
         "gravity_interaction": 0,
         "wall_interaction": 1
-    }
+    },
+    "particle_initialization":"grid"
+    
 }
 ```
 ### Key parameters
@@ -53,9 +57,9 @@ The `config.json` file allows customization of the simulation
 
 ## Future Improvements
 - Improve Code Readability & Documentation
-    - Add inline comments and refactor code for clarity.
+    - Add inline comments and refactor code for clarity. (DONE ALMOST)
 - Enhance Particle Initialization
-    - Support different initialization scenarios depending on interactions (e.g., clustered groups, uniform distribution, random velocities).
+    - Support different initialization scenarios depending on interactions (e.g., clustered groups, uniform distribution, random velocities). (DONE, maybe it is better to modularize the scenarios)
 - Add Lennard-Jones Potential
     - Implement Lennard-Jones interactions to simulate solid-like behavior in molecular dynamics.
 - Enable Mixed Interactions
