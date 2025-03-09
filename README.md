@@ -65,3 +65,5 @@ The `config.json` file allows customization of the simulation
     - Implement Lennard-Jones interactions to simulate solid-like behavior in molecular dynamics.
 - Enable Mixed Interactions
     - Allow different particle types to have customized interaction rules within the same simulation.
+- Add Physics sanity-checks (graphs of energy and other related variables)
+- Cappacity to toggle saved or inline animation.
