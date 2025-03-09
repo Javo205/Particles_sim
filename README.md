@@ -2,7 +2,7 @@
 
 This project simulates colliding particles using Verlet integration, elastic collisions, and optional gravity interactions.
 It was created as a personal project to deepen my understanding of Object-Oriented Programming (OOP) and version control.
-The project is continuously evolving, with planned improvements and potential extensions into related physics-based simulations, which may emerge as independent projects in the future.
+It is continuously evolving, with planned improvements and potential extensions into related physics-based simulations, which may emerge as independent projects in the future.
 AI has been a valuable tool in its development—currently, I focus more on understanding concepts rather than writing code from scratch.
 
 
