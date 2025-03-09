@@ -199,14 +199,16 @@ class Simulation:
             self.N = 3
             self.paredx = 100
             self.paredy = 100
+            self.g = 0
+            self.search_method = 'KDTree'
             radius = np.array([10, 1, 0.1])
-            mass = np.array([70, 1, 0.06])
+            mass = np.array([70, 1, 0.1])
             pos = np.array([[self.paredx / 2, self.paredy / 2],
                             [self.paredx / 2 - 22, self.paredy / 2 - 22],
                             [self.paredx / 2 - 24.2, self.paredy / 2 - 24.2]])
             vel = np.array([[0, 0],
                             [-4, 4],
-                            [-5.6, 5.6]])
+                            [-5.7, 5.73]])
             for i in range(3):
                 particles.append(Particle(pos[i], vel[i], radius[i], mass[i], self.dt))
 
@@ -216,16 +218,17 @@ class Simulation:
             self.gravity_interaction = 1
             self.wall_interaction = 0
             self.N = 3
-            self.paredx = 100
-            self.paredy = 100
-            radius = np.array([10, 1, 1])
-            mass = np.array([70, 1, 1])
-            pos = np.array([[self.paredx / 2, self.paredy / 2],
-                            [self.paredx / 2 - 15, self.paredy / 2 - 15],
-                            [self.paredx / 2, self.paredy / 2 - 25]])
-            vel = np.array([[0, 0],
-                            [-5, 5],
-                            [5, 0]])
+            self.paredx = 500
+            self.paredy = 500
+            self.g = 0
+            radius = np.array([10, 0.5, 10])
+            mass = np.array([50, 0.1, 50])
+            pos = np.array([[self.paredx / 2 + 20, self.paredy / 2],
+                            [self.paredx / 2 - 35, self.paredy / 2 - 35],
+                            [self.paredx / 2 - 20, self.paredy / 2]])
+            vel = np.array([[0, 2.5],
+                            [-4, 4],
+                            [0, -2.6]])
             for i in range(3):
                 particles.append(Particle(pos[i], vel[i], radius[i], mass[i], self.dt))
 
