@@ -1,19 +1,23 @@
 {
     "simulation":{
-        "dt": 0.4,
-        "nframes": 1000,
+        "dt": 0.005,
+        "nframes": 5000,
+        "physics_steps_per_frame": 10,
         "plot_dir": "Visuals"
     },
     "physics":{
-        "paredx": 5000,
-        "paredy": 5000,
-        "N": 1000,
+        "paredx": 100,
+        "paredy": 100,
+        "N": 40,
         "G": 10,
-        "viscosity": 0.001,
-        "search_method": "KDTree" 
+        "g": -7,
+        "viscosity": 0,
+        "search_method": "Grid" 
     },
     "toggle":{
         "gravity_interaction": 0,
         "wall_interaction": 1
-    }
+    },
+    "particle_initialization":"grid"
+    
 }

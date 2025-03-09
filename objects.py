@@ -4,6 +4,10 @@ import scipy.spatial as spatial
 
 # TODO: change particle color based on speed
 class Particle:
+    """
+    2D Particle object under Verlet Scheme: position, velocity (just for initial condition), prev position,
+    acceleration, radius, mass and time step dt
+    """
     def __init__(self, pos, vel, radius, mass, dt):
         self.position = pos
         self.velocity = vel
@@ -14,60 +18,68 @@ class Particle:
         self.dt = dt
 
     def estimated_velocity(self):
-        """Estimate velocity using finite differences (Verlet-compatible)."""
+        """Estimate velocity using finite differences"""
         return (self.position - self.prev_position) / self.dt
 
-    def update_newton_scheme(self, dt):
+    def update_euler_scheme(self, dt):
+        """ Not used anymore. Euler Scheme """
         self.velocity += self.acceleration * dt
         self.position += self.velocity * dt
 
     def update_verlet_scheme(self, dt):
+        """ Verlet scheme """
         new_position = 2 * self.position - self.prev_position + self.acceleration * self.dt**2
         self.prev_position = np.copy(self.position)
         self.position = new_position
 
-    def vel_viscossity(self, viscossity, dt):
+    def vel_viscosity(self, viscosity, dt):
+        """ Add damping via viscosity """
         velocity = (self.position - self.prev_position) / self.dt
-        velocity = -viscossity * velocity
+        velocity = -viscosity * velocity
         self.prev_position = self.prev_position - velocity * self.dt
 
+    def add_Gravity(self, grav):
+        """ Create gravity acceleration (by default negative Y axis) """
+        self.acceleration += np.array([0, grav])
+
     def check_walls(self, x_min, x_max, y_min, y_max):
-        """Handle wall collisions with Verlet integration"""
+        """Handle wall collisions with Verlet integration, properly handling resting contacts"""
         # Calculate current velocity from positions
-        damping = 1.0
+        damping = 0.5  # 0 for complete damping, 1 for no damping
         velocity = (self.position - self.prev_position) / self.dt
+
+        # Bottom wall collision - special handling for resting particles
+        if self.position[1] - self.radius <= y_min:
+            # Place exactly at boundary (always correct position)
+            self.position[1] = y_min + self.radius
+
+            # If moving downward, reverse velocity
+            if velocity[1] < 0:
+                velocity[1] = -velocity[1] * damping
+
+            # Always update previous position to ensure velocity is correct
+            self.prev_position[1] = self.position[1] - velocity[1] * self.dt
 
         # Left wall collision
         if self.position[0] - self.radius <= x_min:
-            # Ensure we were coming from inside
-            if self.prev_position[0] - self.radius > x_min:
-                # Place exactly at boundary
-                self.position[0] = x_min + self.radius
-                # Reverse x component of velocity
-                velocity[0] = -velocity[0] * damping  # Adding a damping factor of damping
-                # Recalculate previous position based on new velocity
-                self.prev_position[0] = self.position[0] - velocity[0] * self.dt
+            self.position[0] = x_min + self.radius
+            if velocity[0] < 0:  # Only reverse if moving toward wall
+                velocity[0] = -velocity[0] * damping
+            self.prev_position[0] = self.position[0] - velocity[0] * self.dt
 
         # Right wall collision
         if self.position[0] + self.radius >= x_max:
-            if self.prev_position[0] + self.radius < x_max:
-                self.position[0] = x_max - self.radius
+            self.position[0] = x_max - self.radius
+            if velocity[0] > 0:  # Only reverse if moving toward wall
                 velocity[0] = -velocity[0] * damping
-                self.prev_position[0] = self.position[0] - velocity[0] * self.dt
-
-        # Bottom wall collision
-        if self.position[1] - self.radius <= y_min:
-            if self.prev_position[1] - self.radius > y_min:
-                self.position[1] = y_min + self.radius
-                velocity[1] = -velocity[1] * damping
-                self.prev_position[1] = self.position[1] - velocity[1] * self.dt
+            self.prev_position[0] = self.position[0] - velocity[0] * self.dt
 
         # Top wall collision
         if self.position[1] + self.radius >= y_max:
-            if self.prev_position[1] + self.radius < y_max:
-                self.position[1] = y_max - self.radius
+            self.position[1] = y_max - self.radius
+            if velocity[1] > 0:  # Only reverse if moving toward wall
                 velocity[1] = -velocity[1] * damping
-                self.prev_position[1] = self.position[1] - velocity[1] * self.dt
+            self.prev_position[1] = self.position[1] - velocity[1] * self.dt
 
 
 class SpatialGrid:
@@ -105,7 +117,6 @@ class SpatialGrid:
             self.add_particle(p)
 
 
-# TODO: ckdtree maybe gives better performance CHECK
 class KDTreeNeighborSearch:
     def __init__(self, particles, search_radius):
         """ Initializes the KDTree using particle positions"""

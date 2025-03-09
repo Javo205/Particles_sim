@@ -8,7 +8,19 @@ from tqdm import tqdm
 
 
 def compute_optimized_parameters(N, avg_radius, config):
-    """Dynamically determine optimal search radius and cell size."""
+    """
+    Dynamically determine optimal search radius and cell size.
+
+    Inputs:
+    - N: Number of particles
+    - avg_radius: Average radius of particles
+    - config: configuration loaded from config.json
+
+    Outputs:
+     Depending on the type of simulation and search method, it returns
+     the adjusted search parameter, search radius for KDTree search or
+     cell_size for Gridsearch
+    """
     if N < 500:
         cell_factor = 2.0
     elif N < 5000:
@@ -17,7 +29,7 @@ def compute_optimized_parameters(N, avg_radius, config):
         cell_factor = 5.0
 
     search_radius = 2.5 * avg_radius  # For collision detection
-    gravity_radius = 10.0 * avg_radius  # For gravitational forces
+    gravity_radius = 50.0 * avg_radius  # For gravitational forces
     cell_size = cell_factor * avg_radius
 
     if config.physics.search_method == "Grid":
@@ -30,8 +42,49 @@ def compute_optimized_parameters(N, avg_radius, config):
             return gravity_radius
 
 
+def avoid_overlap(particle1, particle2, delta_pos, distance):
+    """
+    Simulation method. Theoretically, it should avoid overlap between
+    particle1 and particle2 by separating them along collision axis.
+
+    Inputs:
+    - particle1: Particle object
+    - paritcle2: Particle object
+    - delta_pos: direction of collision
+    - distance: module of direction of collision
+
+    Outputs:
+     Modification of both positions of particles 1 and 2
+    """
+
+    # Check if particles are overlapping
+    if distance < particle1.radius + particle2.radius:
+        # Calculate normal and tangential directions
+        normal = delta_pos / distance
+        # Resolve overlap by moving particles apart
+        M = particle1.mass + particle2.mass
+        overlap = (particle1.radius + particle2.radius - distance)
+        move1 = overlap * particle2.mass / M
+        move2 = overlap * particle1.mass / M
+
+        # Move particles to avoid overlap
+        particle1.position += normal * move1
+        particle2.position -= normal * move2
+
+
 def check_collision_verlet(particle1, particle2, delta_pos, distance):
-    """Elastic collisions for Verlet integration"""
+    """
+    Simulation method. Elastic collisions for Verlet integration
+
+    Inputs:
+    - particle1: Particle object
+    - paritcle2: Particle object
+    - delta_pos: direction of collision
+    - distance: module of direction of collision
+
+    Outputs:
+     Modification of both positions of particles 1 and 2 following an ellastic collision physics
+    """
     # Check if particles are overlapping
     if distance < particle1.radius + particle2.radius:
         # Calculate normal and tangential directions
@@ -75,7 +128,9 @@ def check_collision_verlet(particle1, particle2, delta_pos, distance):
 
 
 def check_collision(particle1, particle2, delta_pos, distance):
-    ''' Ellastic collisions '''
+    '''
+    (not used anymore) Ellastic collisions following euler integration scheme
+    '''
 
     if distance < particle1.radius + particle2.radius:
         normal = delta_pos / distance
@@ -101,7 +156,10 @@ def check_collision(particle1, particle2, delta_pos, distance):
 
 # TODO: Add LJ potential and see what happens
 def Gravitational_forces(p1, p2, G, delta, distance):
-
+    """
+    Calculation of the acceleration that two interacting particles
+    get under gravitational potential
+    """
     softening = max(p1.radius + p2.radius, 0.1)
     if distance > softening:  # Avoid singularity at zero distance
         force_magnitude = G * (p1.mass * p2.mass) / (distance**2 + softening**2)
@@ -114,26 +172,34 @@ def Gravitational_forces(p1, p2, G, delta, distance):
 
 
 class Simulation:
+    """
+    Object that initializes all needed to compute the simulation and
+    covers the functions that generate and save the animation.
+    """
     def __init__(self, config_file="config.json"):
         """Initialize the simulation from a config file."""
         self.config = load_config(config_file)
 
         # Extract parameters from config
         self.dt = self.config.simulation.dt
-        self.nframes = self.config.simulation.nframes
+        self.total_animation_frames = self.config.simulation.nframes // self.config.simulation.physics_steps_per_frame
+
         self.plot_dir = self.config.simulation.plot_dir
         self.paredx = self.config.physics.paredx
         self.paredy = self.config.physics.paredy
         self.N = self.config.physics.N
         self.G = self.config.physics.G
+        self.g = self.config.physics.g
         self.viscosity = self.config.physics.viscosity
         self.search_method = self.config.physics.search_method
         self.gravity_interaction = self.config.toggle.gravity_interaction
         self.wall_interaction = self.config.toggle.wall_interaction
+        self.particle_initialization = self.config.particle_initialization
 
         # Initialize particles
         self.particles = self.initialize_particles()
         self.search_parameter = compute_optimized_parameters(self.N, self.rad_sum / self.N, self.config)
+
         # Initialize spatial grid for collision handling
         if self.search_method == "Grid":
             self.grid = SpatialGrid(cell_size=self.search_parameter)
@@ -142,7 +208,7 @@ class Simulation:
             self.grid = KDTreeNeighborSearch(self.particles, self.search_parameter)
 
         # Setup Matplotlib figure for animation
-        self.pbar_sim = tqdm(total=self.nframes, desc="Simulating Physics")
+        self.pbar_sim = tqdm(total=self.total_animation_frames, desc="Simulating Physics")
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, self.paredx)
         self.ax.set_ylim(0, self.paredy)
@@ -161,45 +227,118 @@ class Simulation:
     def initialize_particles(self):
         """Creates a list of Particle objects with initial conditions."""
         particles = []
-        self.rad_sum = 0
-        for i in range(self.N):
-            radius = np.random.uniform(0.5, 1.5) * 30
-            mass = radius * np.random.uniform(2, 2.5)
-            pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
-            vel = np.random.uniform([-1, -1], [1, 1]) * 30  # Random initial velocity
-            particles.append(Particle(pos, vel, radius, mass, self.dt))
-            self.rad_sum += radius
+
+        if self.particle_initialization == "random":
+            self.rad_sum = 0
+            for i in range(self.N):
+                radius = np.random.uniform(0.5, 1.5) * 30
+                mass = radius * np.random.uniform(2, 2.5)
+                pos = np.random.uniform([radius, radius], [self.paredx - radius, self.paredy - radius])
+                vel = np.random.uniform([-1, -1], [1, 1]) * 30  # Random initial velocity
+                particles.append(Particle(pos, vel, radius, mass, self.dt))
+                self.rad_sum += radius
+
+        elif self.particle_initialization == "gravitation1":
+            self.gravity_interaction = 1
+            self.wall_interaction = 0
+            self.N = 3
+            self.paredx = 100
+            self.paredy = 100
+            self.g = 0
+            self.search_method = 'KDTree'
+            radius = np.array([10, 1, 0.1])
+            mass = np.array([70, 1, 0.1])
+            pos = np.array([[self.paredx / 2, self.paredy / 2],
+                            [self.paredx / 2 - 22, self.paredy / 2 - 22],
+                            [self.paredx / 2 - 24.2, self.paredy / 2 - 24.2]])
+            vel = np.array([[0, 0],
+                            [-4, 4],
+                            [-5.7, 5.73]])
+            for i in range(3):
+                particles.append(Particle(pos[i], vel[i], radius[i], mass[i], self.dt))
+
+            self.rad_sum = np.sum(radius)
+
+        elif self.particle_initialization == "gravitation2":
+            self.gravity_interaction = 1
+            self.wall_interaction = 0
+            self.N = 3
+            self.paredx = 500
+            self.paredy = 500
+            self.g = 0
+            radius = np.array([10, 0.5, 10])
+            mass = np.array([50, 0.1, 50])
+            pos = np.array([[self.paredx / 2 + 20, self.paredy / 2],
+                            [self.paredx / 2 - 35, self.paredy / 2 - 35],
+                            [self.paredx / 2 - 20, self.paredy / 2]])
+            vel = np.array([[0, 2.5],
+                            [-4, 4],
+                            [0, -2.6]])
+            for i in range(3):
+                particles.append(Particle(pos[i], vel[i], radius[i], mass[i], self.dt))
+
+            self.rad_sum = np.sum(radius)
+
+        elif self.particle_initialization == "grid":
+            rows = int(np.sqrt(self.N))  # Approximate number of rows
+            cols = int(np.ceil(self.N / rows))  # Compute columns to fit N
+
+            # Compute spacing between particles
+            x_spacing = self.paredx / (cols + 1)  # Leave margins
+            y_spacing = self.paredy / (rows + 1)
+
+            # Assign positions
+            index = 0
+            for i in range(rows):
+                for j in range(cols):
+                    if index >= self.N:
+                        break  # Stop if we placed all N particles
+
+                    # Compute position (avoid boundaries)
+                    x_pos = (j + 1) * x_spacing
+                    y_pos = (i + 1) * y_spacing
+
+                    radius = np.random.uniform(0.5, 1.5) * 2  # Set radius
+                    mass = radius * np.random.uniform(2, 2.5)  # Set mass
+                    vel = np.random.uniform([-1, -1], [1, 1]) * 0.05  # Initial velocity
+
+                    particles.append(Particle(np.array([x_pos, y_pos]), vel, radius, mass, self.dt))
+                    index += 1
+
+            self.rad_sum = sum(p.radius for p in particles)  # Update radius sum
         return particles
 
-    def compute_interactions(self):
+    def compute_interactions(self, p):
         """Computes interactions particle - particle."""
-        for p in self.particles:
-            p.acceleration = np.array([0.0, 0.0])  # Reset acceleration
+        neighbors = self.grid.get_nearby_particles(p)
+        for other in neighbors:
+            if p is not other:
+                delta = other.position - p.position
+                distance = np.linalg.norm(delta)
+                if self.gravity_interaction:
+                    Gravitational_forces(p, other, self.G, delta, distance)
 
-        for p in self.particles:
-            neighbors = self.grid.get_nearby_particles(p)
-            for other in neighbors:
-                if p is not other:
-                    delta = other.position - p.position
-                    distance = np.linalg.norm(delta)
-                    if self.gravity_interaction:
-                        Gravitational_forces(p, other, self.G, delta, distance)
-
-                    check_collision_verlet(p, other, delta, distance)
+                check_collision_verlet(p, other, delta, distance)
+                # only_overlap(p, other, delta, distance)
 
     def update_positions(self):
         """Updates particle positions using Verlet integration."""
         for p in self.particles:
-            p.vel_viscossity(self.viscosity, self.dt)  # Apply viscosity
-            p.update_verlet_scheme(self.dt)  # Move particle
+            p.acceleration = np.array([0.0, 0.0])  # Reset acceleration
+
+        for p in self.particles:
+            p.vel_viscosity(self.viscosity, self.dt)  # Apply viscosity
+            p.add_Gravity(self.g)  # Sum gravity forces
             if self.wall_interaction:
-                p.check_walls(0, self.paredx, 0, self.paredy)
+                p.check_walls(0, self.paredx, 0, self.paredy)  # Wall constraints
+            self.compute_interactions(p)  # Compute p - p interaction
+            p.update_verlet_scheme(self.dt)  # Move particle
 
     def animate(self, frame):
-        """Update function for Matplotlib animation."""
-        self.grid.update(self.particles)  # Update spatial grid
-        self.compute_interactions()  # Compute forces
-        self.update_positions()  # Move particles
+        """Update function for Matplotlib animation. (not used anymore)"""
+        for _ in range(self.config.simulation.physics_steps_per_frame):
+            self.grid.update(self.particles)
+            self.update_positions()
 
         # Update circle positions
         for i, p in enumerate(self.particles):
@@ -217,10 +356,28 @@ class Simulation:
         Writer = animation.FFMpegWriter
         writer = Writer(fps=fps, metadata=dict(artist="Simulation"), bitrate=1800)
 
-        # Create the animation
-        anim = animation.FuncAnimation(self.fig, self.animate, frames=self.nframes, interval=self.dt * 1000, blit=True)
+        # Perform a number of substep simuation frames before rendering
+        def animate_wrapper(frame):
+            for _ in range(self.config.simulation.physics_steps_per_frame):
+                self.grid.update(self.particles)
+                self.update_positions()
 
-        # Save as a video file
+            # Update circle positions for rendering
+            for i, p in enumerate(self.particles):
+                self.circles[i].center = p.position
+
+            self.pbar_sim.update(1)
+            return self.circles
+
+        anim = animation.FuncAnimation(
+            self.fig,
+            animate_wrapper,
+            frames=self.total_animation_frames,
+            interval=self.dt * self.config.simulation.physics_steps_per_frame * 1000,
+            blit=True
+        )
+
+        # Save as video file
         anim.save(os.path.join(self.plot_dir, filename), writer=writer)
         self.pbar_sim.close()
         print(f"Animation saved successfully as {filename}!")
