@@ -8,7 +8,19 @@ from tqdm import tqdm
 
 
 def compute_optimized_parameters(N, avg_radius, config):
-    """Dynamically determine optimal search radius and cell size."""
+    """
+    Dynamically determine optimal search radius and cell size.
+
+    Inputs:
+    - N: Number of particles
+    - avg_radius: Average radius of particles
+    - config: configuration loaded from config.json
+
+    Outputs:
+     Depending on the type of simulation and search method, it returns
+     the adjusted search parameter, search radius for KDTree search or
+     cell_size for Gridsearch
+    """
     if N < 500:
         cell_factor = 2.0
     elif N < 5000:
@@ -30,7 +42,20 @@ def compute_optimized_parameters(N, avg_radius, config):
             return gravity_radius
 
 
-def only_overlap(particle1, particle2, delta_pos, distance):
+def avoid_overlap(particle1, particle2, delta_pos, distance):
+    """
+    Simulation method. Theoretically, it should avoid overlap between
+    particle1 and particle2 by separating them along collision axis.
+
+    Inputs:
+    - particle1: Particle object
+    - paritcle2: Particle object
+    - delta_pos: direction of collision
+    - distance: module of direction of collision
+
+    Outputs:
+     Modification of both positions of particles 1 and 2
+    """
 
     # Check if particles are overlapping
     if distance < particle1.radius + particle2.radius:
@@ -48,7 +73,18 @@ def only_overlap(particle1, particle2, delta_pos, distance):
 
 
 def check_collision_verlet(particle1, particle2, delta_pos, distance):
-    """Elastic collisions for Verlet integration"""
+    """
+    Simulation method. Elastic collisions for Verlet integration
+
+    Inputs:
+    - particle1: Particle object
+    - paritcle2: Particle object
+    - delta_pos: direction of collision
+    - distance: module of direction of collision
+
+    Outputs:
+     Modification of both positions of particles 1 and 2 following an ellastic collision physics
+    """
     # Check if particles are overlapping
     if distance < particle1.radius + particle2.radius:
         # Calculate normal and tangential directions
@@ -92,7 +128,9 @@ def check_collision_verlet(particle1, particle2, delta_pos, distance):
 
 
 def check_collision(particle1, particle2, delta_pos, distance):
-    ''' Ellastic collisions '''
+    '''
+    (not used anymore) Ellastic collisions following euler integration scheme
+    '''
 
     if distance < particle1.radius + particle2.radius:
         normal = delta_pos / distance
@@ -118,7 +156,10 @@ def check_collision(particle1, particle2, delta_pos, distance):
 
 # TODO: Add LJ potential and see what happens
 def Gravitational_forces(p1, p2, G, delta, distance):
-
+    """
+    Calculation of the acceleration that two interacting particles
+    get under gravitational potential
+    """
     softening = max(p1.radius + p2.radius, 0.1)
     if distance > softening:  # Avoid singularity at zero distance
         force_magnitude = G * (p1.mass * p2.mass) / (distance**2 + softening**2)
@@ -131,6 +172,10 @@ def Gravitational_forces(p1, p2, G, delta, distance):
 
 
 class Simulation:
+    """
+    Object that initializes all needed to compute the simulation and
+    covers the functions that generate and save the animation.
+    """
     def __init__(self, config_file="config.json"):
         """Initialize the simulation from a config file."""
         self.config = load_config(config_file)
@@ -253,9 +298,9 @@ class Simulation:
                     x_pos = (j + 1) * x_spacing
                     y_pos = (i + 1) * y_spacing
 
-                    radius = np.random.uniform(0.5, 1.5)  # Set radius
+                    radius = np.random.uniform(0.5, 1.5) * 2  # Set radius
                     mass = radius * np.random.uniform(2, 2.5)  # Set mass
-                    vel = np.random.uniform([-1, -1], [1, 1]) * 5  # Initial velocity
+                    vel = np.random.uniform([-1, -1], [1, 1]) * 0.05  # Initial velocity
 
                     particles.append(Particle(np.array([x_pos, y_pos]), vel, radius, mass, self.dt))
                     index += 1
@@ -282,17 +327,18 @@ class Simulation:
             p.acceleration = np.array([0.0, 0.0])  # Reset acceleration
 
         for p in self.particles:
-            p.vel_viscossity(self.viscosity, self.dt)  # Apply viscosity
+            p.vel_viscosity(self.viscosity, self.dt)  # Apply viscosity
             p.add_Gravity(self.g)  # Sum gravity forces
             if self.wall_interaction:
-                p.check_walls(0, self.paredx, 0, self.paredy)
-            self.compute_interactions(p)  # Compute forces
+                p.check_walls(0, self.paredx, 0, self.paredy)  # Wall constraints
+            self.compute_interactions(p)  # Compute p - p interaction
             p.update_verlet_scheme(self.dt)  # Move particle
 
     def animate(self, frame):
-        """Update function for Matplotlib animation."""
-        self.grid.update(self.particles)  # Update spatial grid
-        self.update_positions()  # Move particles
+        """Update function for Matplotlib animation. (not used anymore)"""
+        for _ in range(self.config.simulation.physics_steps_per_frame):
+            self.grid.update(self.particles)
+            self.update_positions()
 
         # Update circle positions
         for i, p in enumerate(self.particles):

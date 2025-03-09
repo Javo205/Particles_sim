@@ -4,6 +4,10 @@ import scipy.spatial as spatial
 
 # TODO: change particle color based on speed
 class Particle:
+    """
+    2D Particle object under Verlet Scheme: position, velocity (just for initial condition), prev position,
+    acceleration, radius, mass and time step dt
+    """
     def __init__(self, pos, vel, radius, mass, dt):
         self.position = pos
         self.velocity = vel
@@ -14,30 +18,34 @@ class Particle:
         self.dt = dt
 
     def estimated_velocity(self):
-        """Estimate velocity using finite differences (Verlet-compatible)."""
+        """Estimate velocity using finite differences"""
         return (self.position - self.prev_position) / self.dt
 
-    def update_newton_scheme(self, dt):
+    def update_euler_scheme(self, dt):
+        """ Not used anymore. Euler Scheme """
         self.velocity += self.acceleration * dt
         self.position += self.velocity * dt
 
     def update_verlet_scheme(self, dt):
+        """ Verlet scheme """
         new_position = 2 * self.position - self.prev_position + self.acceleration * self.dt**2
         self.prev_position = np.copy(self.position)
         self.position = new_position
 
-    def vel_viscossity(self, viscossity, dt):
+    def vel_viscosity(self, viscosity, dt):
+        """ Add damping via viscosity """
         velocity = (self.position - self.prev_position) / self.dt
-        velocity = -viscossity * velocity
+        velocity = -viscosity * velocity
         self.prev_position = self.prev_position - velocity * self.dt
 
     def add_Gravity(self, grav):
+        """ Create gravity acceleration (by default negative Y axis) """
         self.acceleration += np.array([0, grav])
 
     def check_walls(self, x_min, x_max, y_min, y_max):
         """Handle wall collisions with Verlet integration, properly handling resting contacts"""
         # Calculate current velocity from positions
-        damping = 0.99
+        damping = 0.5  # 0 for complete damping, 1 for no damping
         velocity = (self.position - self.prev_position) / self.dt
 
         # Bottom wall collision - special handling for resting particles
@@ -109,7 +117,6 @@ class SpatialGrid:
             self.add_particle(p)
 
 
-# TODO: ckdtree maybe gives better performance CHECK
 class KDTreeNeighborSearch:
     def __init__(self, particles, search_radius):
         """ Initializes the KDTree using particle positions"""
