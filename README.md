@@ -54,6 +54,7 @@ The `config.json` file allows customization of the simulation
 - `gravity_interaction`: Set to `1` to enable gravity, `0` to disable.
 - `wall_interaction`: Set to `1` to enable wall collisions, `0` to disable.
 - `N`: number of particles in the simulation
+- `particle_initialization`: can take `random`, `grid`, `gravity1` or `gravity2` for different case scenarios. It is suggested that for the last two, `gravity_interaction` must be toggled in order for it to work properly
 
 ## Future Improvements
 - Improve Code Readability & Documentation
