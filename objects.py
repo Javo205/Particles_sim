@@ -35,42 +35,43 @@ class Particle:
         self.acceleration += np.array([0, grav])
 
     def check_walls(self, x_min, x_max, y_min, y_max):
-        """Handle wall collisions with Verlet integration"""
+        """Handle wall collisions with Verlet integration, properly handling resting contacts"""
         # Calculate current velocity from positions
-        damping = 0.9
+        damping = 0.99
         velocity = (self.position - self.prev_position) / self.dt
+
+        # Bottom wall collision - special handling for resting particles
+        if self.position[1] - self.radius <= y_min:
+            # Place exactly at boundary (always correct position)
+            self.position[1] = y_min + self.radius
+
+            # If moving downward, reverse velocity
+            if velocity[1] < 0:
+                velocity[1] = -velocity[1] * damping
+
+            # Always update previous position to ensure velocity is correct
+            self.prev_position[1] = self.position[1] - velocity[1] * self.dt
 
         # Left wall collision
         if self.position[0] - self.radius <= x_min:
-            # Ensure we were coming from inside
-            if self.prev_position[0] - self.radius > x_min:
-                # Place exactly at boundary
-                self.position[0] = x_min + self.radius
-                # Reverse x component of velocity
-                velocity[0] = -velocity[0] * damping  # Adding a damping factor of damping
-                # Recalculate previous position based on new velocity
-                self.prev_position[0] = self.position[0] - velocity[0] * self.dt
+            self.position[0] = x_min + self.radius
+            if velocity[0] < 0:  # Only reverse if moving toward wall
+                velocity[0] = -velocity[0] * damping
+            self.prev_position[0] = self.position[0] - velocity[0] * self.dt
 
         # Right wall collision
         if self.position[0] + self.radius >= x_max:
-            if self.prev_position[0] + self.radius < x_max:
-                self.position[0] = x_max - self.radius
+            self.position[0] = x_max - self.radius
+            if velocity[0] > 0:  # Only reverse if moving toward wall
                 velocity[0] = -velocity[0] * damping
-                self.prev_position[0] = self.position[0] - velocity[0] * self.dt
-
-        # Bottom wall collision
-        if self.position[1] - self.radius <= y_min:
-            if self.prev_position[1] - self.radius > y_min:
-                self.position[1] = y_min + self.radius
-                velocity[1] = -velocity[1] * damping
-                self.prev_position[1] = self.position[1] - velocity[1] * self.dt
+            self.prev_position[0] = self.position[0] - velocity[0] * self.dt
 
         # Top wall collision
         if self.position[1] + self.radius >= y_max:
-            if self.prev_position[1] + self.radius < y_max:
-                self.position[1] = y_max - self.radius
+            self.position[1] = y_max - self.radius
+            if velocity[1] > 0:  # Only reverse if moving toward wall
                 velocity[1] = -velocity[1] * damping
-                self.prev_position[1] = self.position[1] - velocity[1] * self.dt
+            self.prev_position[1] = self.position[1] - velocity[1] * self.dt
 
 
 class SpatialGrid:
