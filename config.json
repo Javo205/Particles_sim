@@ -1,8 +1,8 @@
 {
     "simulation":{
-        "dt": 0.005,
-        "nframes": 5000,
-        "physics_steps_per_frame": 10,
+        "dt": 0.01,
+        "nframes": 10000,
+        "physics_steps_per_frame": 8,
         "plot_dir": "Visuals"
     },
     "physics":{
@@ -10,7 +10,7 @@
         "paredy": 100,
         "N": 40,
         "G": 10,
-        "g": -7,
+        "g": 0,
         "viscosity": 0,
         "search_method": "Grid" 
     },
