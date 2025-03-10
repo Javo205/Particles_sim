@@ -45,7 +45,7 @@ class Particle:
     def check_walls(self, x_min, x_max, y_min, y_max):
         """Handle wall collisions with Verlet integration, properly handling resting contacts"""
         # Calculate current velocity from positions
-        damping = 0.5  # 0 for complete damping, 1 for no damping
+        damping = 1  # 0 for complete damping, 1 for no damping
         velocity = (self.position - self.prev_position) / self.dt
 
         # Bottom wall collision - special handling for resting particles

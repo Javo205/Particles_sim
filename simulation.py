@@ -219,7 +219,7 @@ class Simulation:
         if self.wall_interaction:
             box = np.array([[0, 0], [self.paredx, 0], [self.paredx, self.paredy], [0, self.paredy], [0, 0]])
             self.ax.plot(box[:, 0], box[:, 1], 'k', alpha=.6)
-        self.circles = [plt.Circle(p.position, p.radius, color='b') for p in self.particles]
+        self.circles = [plt.Circle(p.position, p.radius, color=(np.random.random(), np.random.random(), np.random.random())) for p in self.particles]
         for circle in self.circles:
             self.ax.add_patch(circle)
 
@@ -300,7 +300,7 @@ class Simulation:
 
                     radius = np.random.uniform(0.5, 1.5) * 2  # Set radius
                     mass = radius * np.random.uniform(2, 2.5)  # Set mass
-                    vel = np.random.uniform([-1, -1], [1, 1]) * 0.05  # Initial velocity
+                    vel = np.random.uniform([-1, -1], [1, 1]) * 5  # Initial velocity
 
                     particles.append(Particle(np.array([x_pos, y_pos]), vel, radius, mass, self.dt))
                     index += 1
