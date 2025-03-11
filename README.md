@@ -61,9 +61,9 @@ The `config.json` file allows customization of the simulation
     - Add inline comments and refactor code for clarity. (DONE ALMOST)
 - Enhance Particle Initialization
     - Support different initialization scenarios depending on interactions (e.g., clustered groups, uniform distribution, random velocities). (DONE, maybe it is better to modularize the scenarios)
-- Add Lennard-Jones Potential
+- Add Lennard-Jones Potential (FORKED PROJECT)
     - Implement Lennard-Jones interactions to simulate solid-like behavior in molecular dynamics.
-- Enable Mixed Interactions
+- Enable Mixed Interactions (FORKED PROJECT)
     - Allow different particle types to have customized interaction rules within the same simulation.
 - Add Physics sanity-checks (graphs of energy and other related variables)
 - Cappacity to toggle saved or inline animation.
