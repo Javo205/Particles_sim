@@ -195,6 +195,7 @@ class Simulation:
         self.gravity_interaction = self.config.toggle.gravity_interaction
         self.wall_interaction = self.config.toggle.wall_interaction
         self.particle_initialization = self.config.particle_initialization
+        self.max_velocity_seen = 0.01
 
         # Initialize particles
         self.particles = self.initialize_particles()
@@ -300,17 +301,13 @@ class Simulation:
 
                     radius = np.random.uniform(0.5, 1.5) * 2  # Set radius
                     mass = radius * np.random.uniform(2, 2.5)  # Set mass
-                    vel = np.random.uniform([-1, -1], [1, 1]) * 5  # Initial velocity
+                    vel = np.random.uniform([-1, -1], [1, 1]) * 10  # Initial velocity
 
                     particles.append(Particle(np.array([x_pos, y_pos]), vel, radius, mass, self.dt))
                     index += 1
 
             self.rad_sum = sum(p.radius for p in particles)  # Update radius sum
         return particles
-
-    def velocities_norm(self):
-        velocities = np.array([p.estimated_velocity_module() for p in self.particles])
-        return velocities / np.max(velocities)
 
     def compute_interactions(self, p):
         """Computes interactions particle - particle."""
@@ -371,10 +368,11 @@ class Simulation:
                 self.update_positions()
 
             # Update circle positions
-            velocities = self.velocities_norm()
-
             for i, p in enumerate(self.particles):
-                p.update_color(velocities[i])
+                vel = p.estimated_velocity_module()
+                self.max_velocity_seen = max(self.max_velocity_seen, vel)
+                normalized_vel = vel / self.max_velocity_seen
+                p.update_color(normalized_vel)
                 self.circles[i].center = p.position
                 self.circles[i].set_color(p.color)
 
