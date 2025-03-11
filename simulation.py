@@ -219,7 +219,7 @@ class Simulation:
         if self.wall_interaction:
             box = np.array([[0, 0], [self.paredx, 0], [self.paredx, self.paredy], [0, self.paredy], [0, 0]])
             self.ax.plot(box[:, 0], box[:, 1], 'k', alpha=.6)
-        self.circles = [plt.Circle(p.position, p.radius, color=(np.random.random(), np.random.random(), np.random.random())) for p in self.particles]
+        self.circles = [plt.Circle(p.position, p.radius, color=p.color) for p in self.particles]
         for circle in self.circles:
             self.ax.add_patch(circle)
 
@@ -308,6 +308,10 @@ class Simulation:
             self.rad_sum = sum(p.radius for p in particles)  # Update radius sum
         return particles
 
+    def velocities_norm(self):
+        velocities = np.array([p.estimated_velocity_module() for p in self.particles])
+        return velocities / np.max(velocities)
+
     def compute_interactions(self, p):
         """Computes interactions particle - particle."""
         neighbors = self.grid.get_nearby_particles(p)
@@ -341,8 +345,12 @@ class Simulation:
             self.update_positions()
 
         # Update circle positions
+        velocities = self.velocities_norm()
+
         for i, p in enumerate(self.particles):
+            p.update_color(velocities[i])
             self.circles[i].center = p.position
+            self.circles[i].set_color(p.color)
 
         self.pbar_sim.update(1)
 
@@ -362,9 +370,13 @@ class Simulation:
                 self.grid.update(self.particles)
                 self.update_positions()
 
-            # Update circle positions for rendering
+            # Update circle positions
+            velocities = self.velocities_norm()
+
             for i, p in enumerate(self.particles):
+                p.update_color(velocities[i])
                 self.circles[i].center = p.position
+                self.circles[i].set_color(p.color)
 
             self.pbar_sim.update(1)
             return self.circles

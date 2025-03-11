@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.spatial as spatial
+import matplotlib.pyplot as plt
 
 
 # TODO: change particle color based on speed
@@ -16,10 +17,17 @@ class Particle:
         self.radius = radius
         self.mass = mass
         self.dt = dt
+        self.color = (0, 0, 1)
 
     def estimated_velocity(self):
         """Estimate velocity using finite differences"""
         return (self.position - self.prev_position) / self.dt
+
+    def estimated_velocity_module(self):
+        return np.linalg.norm(self.estimated_velocity())
+
+    def update_color(self, vel_norm):
+        self.color = plt.cm.viridis(vel_norm)[:3]
 
     def update_euler_scheme(self, dt):
         """ Not used anymore. Euler Scheme """
